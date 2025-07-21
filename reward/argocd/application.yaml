@@ -1,0 +1,28 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ${{ values.app_name }}
+  namespace: openshift-gitops
+spec:
+  project: default 
+  source:
+    repoURL: https://${{ values.git_host_url }}/${{ values.git_owner_name }}/${{ values.git_repo_name }}.git
+    targetRevision: develop
+    path: ./manifests
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: ${{ values.app_name }}
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=true
+    - RespectIgnoreDifferences=true
+    - ApplyOutOfSyncOnly=true
+    retry:
+      limit: 10
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 5m

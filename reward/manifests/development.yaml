@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: ${{ values.app_name }}
+  name: ${{ values.app_name }}
+  namespace: quarkusdroneshop-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ${{ values.app_name }}
+  template:
+    metadata:
+      labels:
+        app: q${{ values.app_name }}
+    spec:
+      containers:
+        - name: app
+          image: image-registry.openshift-image-registry.svc:5000/quarkusdroneshop-demo/${{ values.app_name }}:latest
+          ports:
+            - containerPort: 8080
