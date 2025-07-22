@@ -3,12 +3,12 @@ kind: Template
 metadata:
   name: quarkusdroneshop-reward
   title: quarkusdroneshop-reward app
-  description: rewardのマイクロサービス
+  description: rewardのscaffolderマイクロサービス
   tags:
     - recommended
 spec:
   owner: user:default/nmushino
-  type: website
+  type: service
 
   parameters:
     - title: rewardのマイクロサービス
@@ -52,6 +52,22 @@ spec:
           description: GitHubリポジトリを生成するGitHub Organization名を入力してください。
           type: string
           default: quarkusdroneshop
+    - title: GitHubリポジトリ
+      required:
+        - topic-incoming
+        - topic-outgoing
+      properties:
+        topic-incoming:
+          title: 入力トピック名
+          description: インプットとなるトピック名を入力してください。
+          type: string
+          default: 
+        topic-outgoing:
+          title: 入力トピック名
+          description: アウトプットとなるトピック名を入力してください。
+          type: string
+          default: 
+
   steps:
     - id: fetch
       name: Fetch skeleton 
@@ -70,7 +86,7 @@ spec:
       name: Push to GitHub 
       action: publish:github
       input:
-        repoUrl: ${{ parameters.git_host_url }}?owner=${{ parameters.git_owner_name }}&repo=${{ parameters.git_repo_name }}
+        repoUrl: github.com/${{ parameters.git_owner_name }}/${{ parameters.git_repo_name }}
         repoVisibility: public
         sourcePath: ./tenant
         defaultBranch: develop
