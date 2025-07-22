@@ -118,14 +118,6 @@ spec:
                 persistentVolumeClaim:
                   claimName: "quarkusdroneshop-${{ parameters.app_name }}-pvc"
 
-    - id: apply-pipelinerun
-      name: Apply PipelineRun using kubectl
-      action: run:script
-      input:
-        interpreter: bash
-        script: |
-          kubectl apply -f ./pipelinerun.yaml
-
     - id: argocd
       name: Deploy with ArgoCD
       action: argocd:create-resources
