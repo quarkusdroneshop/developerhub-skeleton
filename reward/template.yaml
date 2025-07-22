@@ -95,45 +95,31 @@ spec:
         protectDefaultBranch: false
 
     - id: deploy
-      name: Trigger S2I Pipeline via REST
+      name: Trigger Tekton Pipeline
       action: http:request
       input:
         method: POST
-        url: https://kubernetes.default.svc/apis/tekton.dev/v1beta1/namespaces/quarkusdroneshop-cicd/pipelineruns
+        url: https://kubernetes.default.svc/apis/tekton.dev/v1beta1/namespaces/quarkusdroneshop-demo/pipelineruns
         headers:
-          Authorization: Bearer ${{ secrets.k8sServiceAccountToken }}
+          Authorization: Bearer ${{ secrets.kubernetesServiceAccountToken }}
           Content-Type: application/json
-        body: |
-          {
-            "apiVersion": "tekton.dev/v1beta1",
-            "kind": "PipelineRun",
-            "metadata": {
-              "generateName": "s2i-build-${{ parameters.app_name }}-"
-            },
-            "spec": {
-              "pipelineRef": {
-                "name": "s2i-java-pipeline"
-              },
-              "params": [
-                {
-                  "name": "IMAGE",
-                  "value": "image-registry.openshift-image-registry.svc:5000/quarkusdroneshop-demo/${{ parameters.app_name }}"
-                },
-                {
-                  "name": "GIT_REPO",
-                  "value": "https://github.com/nmushino/${{ parameters.app_name }}"
-                }
-              ],
-              "workspaces": [
-                {
-                  "name": "shared-workspace",
-                  "persistentVolumeClaim": {
-                    "claimName": "quarkusdroneshop-${{ parameters.app_name }}-pvc"
-                  }
-                }
-              ]
-            }
-          }
+        body:
+          apiVersion: tekton.dev/v1beta1
+          kind: PipelineRun
+          metadata:
+            generateName: s2i-build-
+          spec:
+            pipelineRef:
+              name: s2i-java-pipeline
+            params:
+              - name: IMAGE
+                value: image-registry.openshift-image-registry.svc:5000/quarkusdroneshop-demo/${{ parameters.app_name }}
+              - name: GIT_REPO
+                value: https://github.com/nmushino/${{ parameters.app_name }}
+            workspaces:
+              - name: shared-workspace
+                persistentVolumeClaim:
+                  claimName: quarkusdroneshop-${{ parameters.app_name }}-pvc
 
     - id: apply-pipelinerun
       name: Apply PipelineRun using kubectl
