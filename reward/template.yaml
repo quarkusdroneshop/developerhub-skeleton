@@ -80,6 +80,8 @@ spec:
           git_repo_name: ${{ parameters.git_repo_name }}
           git_host_url: ${{ parameters.git_host_url }}
           git_owner_name: ${{ parameters.git_owner_name }}
+          topic-incoming: ${{ parameters.topic-incoming }}
+          topic-outgoing: ${{ parameters.topic-outgoing }}
         targetPath: ./tenant
 
     - id: publish
