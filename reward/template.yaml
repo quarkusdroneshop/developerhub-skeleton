@@ -46,7 +46,7 @@ spec:
           title: GitHub URL
           description: GitHubリポジトリのURLを入力してください。
           type: string
-          default: https://github.com/nmushino/quarkusdroneshop-reward
+          default: github.com?owner=quarkusdroneshop&repo=quarkusdroneshop-reward
         git_owner_name:
           title: GitHub Organization名
           description: GitHubリポジトリを生成するGitHub Organization名を入力してください。
@@ -86,7 +86,7 @@ spec:
       name: Push to GitHub 
       action: publish:github
       input:
-        repoUrl: github.com/${{ parameters.git_owner_name }}/${{ parameters.git_repo_name }}
+        repoUrl: github.com?owner=${{ parameters.git_owner_name }}&repo=${{ parameters.git_repo_name }}
         repoVisibility: public
         sourcePath: ./tenant
         defaultBranch: develop
