@@ -94,15 +94,16 @@ spec:
         defaultBranch: main
         protectDefaultBranch: false
 
-    - id: deploy
-      name: Trigger S2I Pipeline
-      action: kubernetes:apply
+    - id: create-pipelinerun
+      name: Create Tekton PipelineRun YAML
+      action: fs:write
       input:
-        manifest:
+        path: ./pipelinerun.yaml
+        content: |
           apiVersion: tekton.dev/v1beta1
           kind: PipelineRun
           metadata:
-            generateName: s2i-build-
+            generateName: s2i-build-${{ parameters.app_name }}-
           spec:
             pipelineRef:
               name: s2i-java-pipeline
@@ -114,7 +115,15 @@ spec:
             workspaces:
               - name: shared-workspace
                 persistentVolumeClaim:
-                  claimName: quarkusdroneshop-${{ parameters.app_name }}-pvc
+                  claimName: quarkusdroneshop-${{ parameters.app_name }}-pv
+
+    - id: apply-pipelinerun
+      name: Apply PipelineRun using kubectl
+      action: run:script
+      input:
+        interpreter: bash
+        script: |
+          kubectl apply -f ./pipelinerun.yaml
 
     - id: argocd
       name: Deploy with ArgoCD
