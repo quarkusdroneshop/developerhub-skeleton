@@ -52,7 +52,7 @@ spec:
           description: GitHubリポジトリを生成するGitHub Organization名を入力してください。
           type: string
           default: quarkusdroneshop
-    - title: GitHubリポジトリ
+    - title: Kafka Topics
       required:
         - topic-incoming
         - topic-outgoing
