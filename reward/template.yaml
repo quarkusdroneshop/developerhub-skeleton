@@ -91,7 +91,7 @@ spec:
         repoUrl: github.com?owner=${{ parameters.git_owner_name }}&repo=${{ parameters.git_repo_name }}
         repoVisibility: public
         sourcePath: ./tenant
-        defaultBranch: develop
+        defaultBranch: main
         protectDefaultBranch: false
 
     - id: deploy
