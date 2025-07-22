@@ -99,7 +99,7 @@ spec:
       action: http:request
       input:
         method: POST
-        url: https://kubernetes.default.svc/apis/tekton.dev/v1beta1/namespaces/quarkusdroneshop-demo/pipelineruns
+        url: https://kubernetes.default.svc/apis/tekton.dev/v1beta1/namespaces/quarkusdroneshop-cicd/pipelineruns
         headers:
           Authorization: Bearer ${{ secrets.kubernetesServiceAccountToken }}
           Content-Type: application/json
