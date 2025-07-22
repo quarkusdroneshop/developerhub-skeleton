@@ -44,7 +44,7 @@ spec:
           default: quarkusdroneshop-reward
         git_host_url:
           title: GitHub URL
-          description: GitHubリポジトリのURLを入力してください。
+          description: GitHubリポジトリの情報を入力してください。
           type: string
           default: github.com?owner=quarkusdroneshop&repo=quarkusdroneshop-reward
         git_owner_name:
@@ -63,7 +63,7 @@ spec:
           type: string
           default: 
         topic-outgoing:
-          title: 入力トピック名
+          title: 出力トピック名
           description: アウトプットとなるトピック名を入力してください。
           type: string
           default: 
