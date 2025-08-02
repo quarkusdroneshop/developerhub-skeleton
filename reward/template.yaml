@@ -95,19 +95,19 @@ spec:
         protectDefaultBranch: false
 
     - id: run-tekton
-      name: Run Tekton Pipeline
-      action: create:tekton:pipelinerun
+      name: Run Tekton PipelineRun
+      action: create:kubernetes:resource
       input:
-        namespace: "quarkusdroneshop-demo"
-        pipelineRun:
+        manifest:
           apiVersion: tekton.dev/v1beta1
           kind: PipelineRun
           metadata:
             generateName: s2i-build-${{ parameters.app_name }}-
+            namespace: quarkusdroneshop-demo
           spec:
-            serviceAccountName: pipeline
             pipelineRef:
               name: s2i-java-pipeline
+            serviceAccountName: pipeline
             params:
               - name: IMAGE
                 value: "image-registry.openshift-image-registry.svc:5000/quarkusdroneshop-demo/${{ parameters.app_name }}"
