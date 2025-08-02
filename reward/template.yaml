@@ -115,6 +115,7 @@ spec:
         repoUrl: https://${{ parameters.git_host_url }}/${{ parameters.git_owner_name }}/${{ parameters.git_repo_name }}.git
         path: 'argocd/'
         createAppProject: false
+        appProjectName: default
 
     - id: register
       name: Register Catalog into Developer Hub 
