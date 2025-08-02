@@ -98,7 +98,7 @@ spec:
       name: Generate PipelineRun Manifest
       action: fetch:template
       input:
-        url: https://github.com/quarkusdroneshop/developerhub-skeleton/reward/pipelines/s2i-build-pipelinerun.yaml
+        url: https://github.com/quarkusdroneshop/developerhub-skeleton/reward/pipelineruns/s2i-build-reward-pipelinerun.yaml
         values:
           app_name: ${{ parameters.app_name }}
           git_owner_name: ${{ parameters.git_owner_name }}
