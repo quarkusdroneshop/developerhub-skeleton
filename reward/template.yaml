@@ -98,8 +98,8 @@ spec:
       name: Generate PipelineRun Manifest
       action: fetch:template
       input:
-        url: https://github.com/quarkusdroneshop/developerhub-skeleton/blob/main/reward/pipelineruns
-        targetPath: ./pipelines
+        url: https://github.com/quarkusdroneshop/developerhub-skeleton/tree/main/reward/pipelineruns
+        targetPath: ./tenant/argocd/
         values:
           app_name: ${{ parameters.app_name }}
           git_owner_name: ${{ parameters.git_owner_name }}
