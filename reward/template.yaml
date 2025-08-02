@@ -46,7 +46,7 @@ spec:
           title: GitHub URL
           description: GitHubリポジトリのホストを入力してください。
           type: string
-          default: github.com/quarkusdroneshop/quarkusdroneshop-reward
+          default: github.com
         git_owner_name:
           title: GitHub Organization名
           description: GitHubリポジトリを生成するGitHub Organization名を入力してください。
