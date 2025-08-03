@@ -117,6 +117,7 @@ spec:
         appProjectName: default
         appProjectStrict: true
         skipProjectCreation: true
+        createAppProject: false
 
     - id: register
       name: Register Catalog into Developer Hub 
