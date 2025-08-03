@@ -74,7 +74,7 @@ spec:
       action: fetch:template
       input:
         url: https://github.com/quarkusdroneshop/developerhub-skeleton/archive/refs/heads/main.zip
-        subPath: skeleton
+        subPath: developerhub-skeleton-main/skeleton
         values:
           app_name: ${{ parameters.app_name }}
           owner: ${{ parameters.owner }}
@@ -100,7 +100,7 @@ spec:
       action: fetch:template
       input:
         url: https://github.com/quarkusdroneshop/developerhub-skeleton/archive/refs/heads/main.zip
-        subPath: skeleton
+        subPath: developerhub-skeleton-main/skeleton
         targetPath: ./tenant/pipelinerun/
         values:
           app_name: ${{ parameters.app_name }}
