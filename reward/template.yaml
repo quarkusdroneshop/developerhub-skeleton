@@ -116,6 +116,7 @@ spec:
         path: 'argocd/'
         appProjectName: default
         appProjectStrict: true
+        skipProjectCreation: true
 
     - id: register
       name: Register Catalog into Developer Hub 
