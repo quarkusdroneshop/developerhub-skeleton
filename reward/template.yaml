@@ -25,11 +25,11 @@
         protectDefaultBranch: false
 
     - id: generate-pipelinerun
-      name: Generate PipelineRun Manifest
+      name: Generate S2I PipelineRun Manifest
       action: fetch:template
       input:
-        url: https://github.com/quarkusdroneshop/developerhub-skeleton/tree/main/reward/pipelineruns
-        targetPath: ./tenant/argocd/
+        url: https://github.com/your-org/skeleton-s2i-only/tree/main/pipelineruns
+        targetPath: ./tenant/pipelinerun/
         values:
           app_name: ${{ parameters.app_name }}
           git_owner_name: ${{ parameters.git_owner_name }}
