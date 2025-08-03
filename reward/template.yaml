@@ -1,43 +1,43 @@
-  steps:
-    - id: fetch
-      name: Fetch skeleton 
-      action: fetch:template
-      input:
-        url: ./manifest-skeleton
-        values:
-          app_name: ${{ parameters.app_name }}
-          owner: ${{ parameters.owner }}
-          git_repo_name: ${{ parameters.git_repo_name }}
-          git_host_url: ${{ parameters.git_host_url }}
-          git_owner_name: ${{ parameters.git_owner_name }}
-          topic-incoming: ${{ parameters.topic-incoming }}
-          topic-outgoing: ${{ parameters.topic-outgoing }}
-        targetPath: ./tenant
+steps:
+  - id: fetch
+    name: Fetch skeleton 
+    action: fetch:template
+    input:
+      url: ./manifest-skeleton
+      values:
+        app_name: ${{ parameters.app_name }}
+        owner: ${{ parameters.owner }}
+        git_repo_name: ${{ parameters.git_repo_name }}
+        git_host_url: ${{ parameters.git_host_url }}
+        git_owner_name: ${{ parameters.git_owner_name }}
+        topic-incoming: ${{ parameters.topic-incoming }}
+        topic-outgoing: ${{ parameters.topic-outgoing }}
+      targetPath: ./tenant
 
-    - id: publish
-      name: Push to GitHub 
-      action: publish:github
-      input:
-        repoUrl: github.com?owner=${{ parameters.git_owner_name }}&repo=${{ parameters.git_repo_name }}
-        repoVisibility: public
-        sourcePath: ./tenant
-        defaultBranch: main
-        protectDefaultBranch: false
+  - id: publish
+    name: Push to GitHub 
+    action: publish:github
+    input:
+      repoUrl: github.com?owner=${{ parameters.git_owner_name }}&repo=${{ parameters.git_repo_name }}
+      repoVisibility: public
+      sourcePath: ./tenant
+      defaultBranch: main
+      protectDefaultBranch: false
 
-    - id: generate-pipelinerun
-      name: Generate S2I PipelineRun Manifest
-      action: fetch:template
-      input:
-        url: https://github.com/your-org/skeleton-s2i-only/tree/main/pipelineruns
-        targetPath: ./tenant/pipelinerun/
-        values:
-          app_name: ${{ parameters.app_name }}
-          git_owner_name: ${{ parameters.git_owner_name }}
-          git_repo_name: ${{ parameters.git_repo_name }}
+  - id: generate-pipelinerun
+    name: Generate PipelineRun Manifest
+    action: fetch:template
+    input:
+      url: https://github.com/quarkusdroneshop/developerhub-skeleton/tree/main/reward/pipelineruns
+      targetPath: ./tenant/pipelinerun/
+      values:
+        app_name: ${{ parameters.app_name }}
+        git_owner_name: ${{ parameters.git_owner_name }}
+        git_repo_name: ${{ parameters.git_repo_name }}
 
-    - id: register
-      name: Register Catalog into Developer Hub 
-      action: catalog:register
-      input:
-        repoContentsUrl: ${{ steps['publish'].output.repoContentsUrl }}
-        catalogInfoPath: "/catalog-info.yaml"
+  - id: register
+    name: Register Catalog into Developer Hub 
+    action: catalog:register
+    input:
+      repoContentsUrl: ${{ steps['publish'].output.repoContentsUrl }}
+      catalogInfoPath: "/catalog-info.yaml"
