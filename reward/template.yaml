@@ -35,20 +35,6 @@
           git_owner_name: ${{ parameters.git_owner_name }}
           git_repo_name: ${{ parameters.git_repo_name }}
 
-    # ArgoCDデプロイステップをコメントアウトまたは削除
-    # - id: argocd
-    #   name: Deploy with ArgoCD
-    #   action: argocd:create-resources
-    #   input:
-    #     appName: ${{ parameters.app_name }}
-    #     argoInstance: main
-    #     namespace: openshift-gitops
-    #     repoUrl: https://${{ parameters.git_host_url }}/${{ parameters.git_owner_name }}/${{ parameters.git_repo_name }}.git
-    #     path: 'argocd/'
-    #     appProjectName: quarkusdroneshop-demo
-    #     appProjectStrict: true
-    #     createAppProject: false
-
     - id: register
       name: Register Catalog into Developer Hub 
       action: catalog:register
