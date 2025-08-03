@@ -73,7 +73,7 @@ spec:
       name: Fetch skeleton
       action: fetch:template
       input:
-        url: ./skeleton
+        url: https://github.com/nmushino/quarkusdroneshop-reward/archive/refs/heads/main.zip
         values:
           app_name: ${{ parameters.app_name }}
           owner: ${{ parameters.owner }}
