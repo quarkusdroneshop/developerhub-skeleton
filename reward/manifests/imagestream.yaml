@@ -1,10 +1,10 @@
 apiVersion: image.openshift.io/v1
 kind: ImageStream
 metadata:
-  labels:
-    app: ${{ values.app_name }}
-  name: ${{ values.app_name }}
+  name: ${app_name}
   namespace: quarkusdroneshop-demo
+  labels:
+    app: ${app_name}
 spec:
   lookupPolicy:
     local: true

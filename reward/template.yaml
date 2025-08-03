@@ -1,73 +1,3 @@
-apiVersion: scaffolder.backstage.io/v1beta3
-kind: Template
-metadata:
-  name: quarkusdroneshop-reward
-  title: quarkusdroneshop-reward app
-  description: rewardのscaffolderマイクロサービス
-  tags:
-    - recommended
-spec:
-  owner: user:default/nmushino
-  type: service
-
-  parameters:
-    - title: rewardのマイクロサービス
-      required:
-        - app_name
-        - owner
-      properties:
-        app_name:
-          title: quarkusdroneshop-reward
-          description: 作成するアプリ名を指定してください。
-          type: string
-          default: "quarkusdroneshop-reward"
-        owner:
-          title: オーナー
-          type: string
-          description: 作成するComponentのオーナーを選択してください。
-          ui:field: OwnerPicker
-          ui:options:
-            catalogFilter:
-              kind:
-                - Group
-                - User
-    - title: GitHubリポジトリ
-      required:
-        - git_repo_name
-        - git_host_url
-        - git_owner_name
-      properties:
-        git_repo_name:
-          title: GitHubリポジトリ名
-          description: 生成するGitHubリポジトリ名を入力してください。
-          type: string
-          default: quarkusdroneshop-reward
-        git_host_url:
-          title: GitHub URL
-          description: GitHubリポジトリのホストを入力してください。
-          type: string
-          default: github.com
-        git_owner_name:
-          title: GitHub Organization名
-          description: GitHubリポジトリを生成するGitHub Organization名を入力してください。
-          type: string
-          default: quarkusdroneshop
-    - title: Kafka Topics
-      required:
-        - topic-incoming
-        - topic-outgoing
-      properties:
-        topic-incoming:
-          title: 入力トピック名
-          description: インプットとなるトピック名を入力してください。
-          type: string
-          default: 
-        topic-outgoing:
-          title: 出力トピック名
-          description: アウトプットとなるトピック名を入力してください。
-          type: string
-          default: 
-
   steps:
     - id: fetch
       name: Fetch skeleton 
@@ -104,20 +34,20 @@ spec:
           app_name: ${{ parameters.app_name }}
           git_owner_name: ${{ parameters.git_owner_name }}
           git_repo_name: ${{ parameters.git_repo_name }}
-                  
-    - id: argocd
-      name: Deploy with ArgoCD
-      action: argocd:create-resources
-      input:
-        appName: ${{ parameters.app_name }}
-        argoInstance: main
-        namespace: openshift-gitops
-        repoUrl: https://${{ parameters.git_host_url }}/${{ parameters.git_owner_name }}/${{ parameters.git_repo_name }}.git
-        path: 'argocd/'
-        appProjectName: default
-        appProjectStrict: true
-        skipProjectCreation: true
-        createAppProject: false
+
+    # ArgoCDデプロイステップをコメントアウトまたは削除
+    # - id: argocd
+    #   name: Deploy with ArgoCD
+    #   action: argocd:create-resources
+    #   input:
+    #     appName: ${{ parameters.app_name }}
+    #     argoInstance: main
+    #     namespace: openshift-gitops
+    #     repoUrl: https://${{ parameters.git_host_url }}/${{ parameters.git_owner_name }}/${{ parameters.git_repo_name }}.git
+    #     path: 'argocd/'
+    #     appProjectName: quarkusdroneshop-demo
+    #     appProjectStrict: true
+    #     createAppProject: false
 
     - id: register
       name: Register Catalog into Developer Hub 
@@ -125,12 +55,3 @@ spec:
       input:
         repoContentsUrl: ${{ steps['publish'].output.repoContentsUrl }}
         catalogInfoPath: "/catalog-info.yaml"
-
-  output:
-    links:
-      - title: Component
-        icon: catalog
-        entityRef: ${{ steps['register'].output.entityRef }}
-      - title: Gitリポジトリ
-        url: ${{ steps['publish'].output.remoteUrl }}
-        icon: github
