@@ -1,123 +1,62 @@
 apiVersion: scaffolder.backstage.io/v1beta3
 kind: Template
 metadata:
-  name: quarkusdroneshop-reward
-  title: quarkusdroneshop-reward app
-  description: rewardのscaffolderマイクロサービス
-  tags:
-    - recommended
+  name: quarkus-s2i-template
+  title: Quarkus S2I App Template
+  description: Quarkus アプリケーションを S2I でビルド＆OpenShiftにデプロイ
 spec:
-  owner: user:default/nmushino
+  owner: user:guest
   type: service
 
   parameters:
-    - title: rewardのマイクロサービス
+    - title: アプリケーション情報
       required:
         - app_name
-        - owner
+        - git_owner_name
+        - git_repo_name
       properties:
         app_name:
-          title: quarkusdroneshop-reward
-          description: 作成するアプリ名を指定してください。
           type: string
-          default: "quarkusdroneshop-reward"
-        owner:
-          title: オーナー
-          type: string
-          description: 作成するComponentのオーナーを選択してください。
-          ui:field: OwnerPicker
-          ui:options:
-            catalogFilter:
-              kind:
-                - Group
-                - User
-    - title: GitHubリポジトリ
-      required:
-        - git_repo_name
-        - git_host_url
-        - git_owner_name
-      properties:
-        git_repo_name:
-          title: GitHubリポジトリ名
-          description: 生成するGitHubリポジトリ名を入力してください。
-          type: string
-          default: quarkusdroneshop-reward
-        git_host_url:
-          title: GitHub URL
-          description: GitHubリポジトリの情報を入力してください。
-          type: string
-          default: github.com
+          title: アプリケーション名
         git_owner_name:
-          title: GitHub Organization名
-          description: GitHubリポジトリを生成するGitHub Organization名を入力してください。
           type: string
-          default: quarkusdroneshop
-    - title: Kafka Topics
-      required:
-        - topic-incoming
-        - topic-outgoing
-      properties:
-        topic-incoming:
-          title: 入力トピック名
-          description: インプットとなるトピック名を入力してください。
+          title: GitHub オーナー名
+        git_repo_name:
           type: string
-          default: 
-        topic-outgoing:
-          title: 出力トピック名
-          description: アウトプットとなるトピック名を入力してください。
-          type: string
-          default: 
+          title: GitHub リポジトリ名
 
   steps:
     - id: fetch
-      name: Fetch skeleton
+      name: テンプレート取得
       action: fetch:template
       input:
-        url: https://github.com/quarkusdroneshop/developerhub-skeleton/archive/refs/heads/main.zip
-        subPath: developerhub-skeleton-main/skeleton
+        url: ./skeleton
         values:
           app_name: ${{ parameters.app_name }}
-          owner: ${{ parameters.owner }}
-          git_repo_name: ${{ parameters.git_repo_name }}
-          git_host_url: ${{ parameters.git_host_url }}
           git_owner_name: ${{ parameters.git_owner_name }}
-          topic-incoming: ${{ parameters.topic-incoming }}
-          topic-outgoing: ${{ parameters.topic-outgoing }}
-        targetPath: ./tenant
+          git_repo_name: ${{ parameters.git_repo_name }}
 
     - id: publish
-      name: Push to GitHub 
+      name: GitHubへPush
       action: publish:github
       input:
         repoUrl: github.com?owner=${{ parameters.git_owner_name }}&repo=${{ parameters.git_repo_name }}
-        repoVisibility: public
-        sourcePath: ./tenant
+        sourcePath: .
         defaultBranch: main
         protectDefaultBranch: false
-
-    - id: generate-pipelinerun
-      name: Generate PipelineRun Manifest
-      action: fetch:template
-      input:
-        url: https://github.com/quarkusdroneshop/developerhub-skeleton/archive/refs/heads/main.zip
-        subPath: developerhub-skeleton-main/skeleton
-        targetPath: ./tenant/pipelinerun/
-        values:
-          app_name: ${{ parameters.app_name }}
-          git_owner_name: ${{ parameters.git_owner_name }}
-          git_repo_name: ${{ parameters.git_repo_name }}
+        description: Generated Quarkus app with S2I pipeline
 
     - id: register
-      name: Register Catalog into Developer Hub 
+      name: Backstageに登録
       action: catalog:register
       input:
         repoContentsUrl: ${{ steps['publish'].output.repoContentsUrl }}
-        catalogInfoPath: "src/main/resources/catalog-info.yaml"
-        optional: true
+        catalogInfoPath: /catalog-info.yaml
 
   output:
     links:
       - title: GitHub リポジトリ
         url: ${{ steps['publish'].output.remoteUrl }}
-      - title: カタログ登録完了
-        url: ${{ steps['register'].output.catalogInfoUrl }}
+      - title: Backstage エンティティ
+        icon: catalog
+        entityRef: ${{ steps['register'].output.entityRef }}

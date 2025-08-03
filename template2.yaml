@@ -1,0 +1,123 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: quarkusdroneshop-reward
+  title: quarkusdroneshop-reward app
+  description: rewardのscaffolderマイクロサービス
+  tags:
+    - recommended
+spec:
+  owner: user:default/nmushino
+  type: service
+
+  parameters:
+    - title: rewardのマイクロサービス
+      required:
+        - app_name
+        - owner
+      properties:
+        app_name:
+          title: quarkusdroneshop-reward
+          description: 作成するアプリ名を指定してください。
+          type: string
+          default: "quarkusdroneshop-reward"
+        owner:
+          title: オーナー
+          type: string
+          description: 作成するComponentのオーナーを選択してください。
+          ui:field: OwnerPicker
+          ui:options:
+            catalogFilter:
+              kind:
+                - Group
+                - User
+    - title: GitHubリポジトリ
+      required:
+        - git_repo_name
+        - git_host_url
+        - git_owner_name
+      properties:
+        git_repo_name:
+          title: GitHubリポジトリ名
+          description: 生成するGitHubリポジトリ名を入力してください。
+          type: string
+          default: quarkusdroneshop-reward
+        git_host_url:
+          title: GitHub URL
+          description: GitHubリポジトリの情報を入力してください。
+          type: string
+          default: github.com
+        git_owner_name:
+          title: GitHub Organization名
+          description: GitHubリポジトリを生成するGitHub Organization名を入力してください。
+          type: string
+          default: quarkusdroneshop
+    - title: Kafka Topics
+      required:
+        - topic-incoming
+        - topic-outgoing
+      properties:
+        topic-incoming:
+          title: 入力トピック名
+          description: インプットとなるトピック名を入力してください。
+          type: string
+          default: 
+        topic-outgoing:
+          title: 出力トピック名
+          description: アウトプットとなるトピック名を入力してください。
+          type: string
+          default: 
+
+  steps:
+    - id: fetch
+      name: Fetch skeleton
+      action: fetch:template
+      input:
+        url: https://github.com/quarkusdroneshop/developerhub-skeleton/archive/refs/heads/main.zip
+        subPath: developerhub-skeleton-main/skeleton
+        values:
+          app_name: ${{ parameters.app_name }}
+          owner: ${{ parameters.owner }}
+          git_repo_name: ${{ parameters.git_repo_name }}
+          git_host_url: ${{ parameters.git_host_url }}
+          git_owner_name: ${{ parameters.git_owner_name }}
+          topic-incoming: ${{ parameters.topic-incoming }}
+          topic-outgoing: ${{ parameters.topic-outgoing }}
+        targetPath: ./tenant
+
+    - id: publish
+      name: Push to GitHub 
+      action: publish:github
+      input:
+        repoUrl: github.com?owner=${{ parameters.git_owner_name }}&repo=${{ parameters.git_repo_name }}
+        repoVisibility: public
+        sourcePath: ./tenant
+        defaultBranch: main
+        protectDefaultBranch: false
+
+    - id: generate-pipelinerun
+      name: Generate PipelineRun Manifest
+      action: fetch:template
+      input:
+        url: https://github.com/quarkusdroneshop/developerhub-skeleton/archive/refs/heads/main.zip
+        subPath: developerhub-skeleton-main/skeleton
+        targetPath: ./tenant/pipelinerun/
+        values:
+          app_name: ${{ parameters.app_name }}
+          git_owner_name: ${{ parameters.git_owner_name }}
+          git_repo_name: ${{ parameters.git_repo_name }}
+
+    - id: register
+      name: Register Catalog into Developer Hub 
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps['publish'].output.repoContentsUrl }}
+        catalogInfoPath: "src/main/resources/catalog-info.yaml"
+        optional: true
+
+  output:
+    links:
+      - title: GitHub リポジトリ
+        url: ${{ steps['publish'].output.remoteUrl }}
+      - title: カタログ登録完了
+        url: ${{ steps['register'].output.catalogInfoUrl }}
