@@ -110,7 +110,8 @@ spec:
       action: catalog:register
       input:
         repoContentsUrl: ${{ steps['publish'].output.repoContentsUrl }}
-        catalogInfoPath: "/catalog-info.yaml"
+        catalogInfoPath: "src/main/resources/catalog-info.yaml"
+      optional: true
 
   output:
     links:
