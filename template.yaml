@@ -73,7 +73,8 @@ spec:
       name: Fetch skeleton
       action: fetch:template
       input:
-        url: https://github.com/nmushino/quarkusdroneshop-reward/archive/refs/heads/main.zip
+        url: https://github.com/quarkusdroneshop/developerhub-skeleton/archive/refs/heads/main.zip
+        subPath: skeleton
         values:
           app_name: ${{ parameters.app_name }}
           owner: ${{ parameters.owner }}
@@ -98,7 +99,8 @@ spec:
       name: Generate PipelineRun Manifest
       action: fetch:template
       input:
-        url: https://github.com/quarkusdroneshop/developerhub-skeleton/tree/main/reward/pipelineruns
+        url: https://github.com/quarkusdroneshop/developerhub-skeleton/archive/refs/heads/main.zip
+        subPath: skeleton
         targetPath: ./tenant/pipelinerun/
         values:
           app_name: ${{ parameters.app_name }}
