@@ -70,10 +70,10 @@ spec:
 
   steps:
     - id: fetch
-      name: Fetch skeleton 
+      name: Fetch skeleton
       action: fetch:template
       input:
-        url: ./manifest-skeleton/skeleton
+        url: ./skeleton
         values:
           app_name: ${{ parameters.app_name }}
           owner: ${{ parameters.owner }}
@@ -82,7 +82,7 @@ spec:
           git_owner_name: ${{ parameters.git_owner_name }}
           topic-incoming: ${{ parameters.topic-incoming }}
           topic-outgoing: ${{ parameters.topic-outgoing }}
-      targetPath: ./tenant
+        targetPath: ./tenant
 
     - id: publish
       name: Push to GitHub 
