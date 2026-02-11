@@ -24,6 +24,9 @@ spec:
         git_repo_name:
           type: string
           title: GitHub リポジトリ名
+        cluster_name:
+          type: string
+          title: クラスタ名
 
   steps:
     - id: fetch
@@ -35,6 +38,7 @@ spec:
           app_name: ${{ parameters.app_name }}
           git_owner_name: ${{ parameters.git_owner_name }}
           git_repo_name: ${{ parameters.git_repo_name }}
+          cluster_name: ${{ parameters.cluster_name }}
 
     - id: publish
       name: GitHubへPush
