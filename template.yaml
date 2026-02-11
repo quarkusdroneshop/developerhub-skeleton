@@ -65,6 +65,7 @@ spec:
         sourcePath: .
         defaultBranch: main
         protectDefaultBranch: false
+        repoVisibility: public
         description: Generated Quarkus app with S2I pipeline
 
     - id: register
