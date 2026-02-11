@@ -71,9 +71,8 @@ spec:
       name: Backstageに登録
       action: catalog:register
       input:
-        location:
-          type: url
-          target: https://github.com/${{ parameters.git_owner_name }}/${{ parameters.git_repo_name }}/blob/main/catalog-info.yaml
+        repoContentsUrl: https://github.com/${{ parameters.git_owner_name }}/${{ parameters.git_repo_name }}/blob/main
+        catalogInfoPath: /catalog-info.yaml
 
   output:
     links:
