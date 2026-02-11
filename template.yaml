@@ -27,6 +27,14 @@ spec:
         cluster_name:
           type: string
           title: クラスタ名
+          enum:
+            - a-cluster
+            - b-cluster
+            - c-cluster
+          enumNames:
+            - Aクラスタ（フロント）
+            - Bクラスタ（サービス）
+            - Cクラスタ（バックヤード）
 
   steps:
     - id: fetch
