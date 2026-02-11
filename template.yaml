@@ -59,24 +59,20 @@ spec:
           cluster_name: ${{ parameters.cluster_name }}
           owner: ${{ parameters.owner }}
 
-    # - id: publish
-    #   name: GitHubへPush
-    #   action: publish:github
-    #   input:
-    #     repoUrl: github.com?owner=${{ parameters.git_owner_name }}&repo=${{ parameters.git_repo_name }}
-    #     sourcePath: .
-    #     defaultBranch: main
-    #     protectDefaultBranch: false
-    #     repoVisibility: public
-    #     description: Generated Quarkus app with S2I pipeline
+    - id: publish
+      name: GitHubへPush
+      action: publish:github
+      input:
+        repoUrl: github.com?owner=${{ parameters.git_owner_name }}&repo=${{ parameters.git_repo_name }}
+        defaultBranch: main
+        repoVisibility: public
 
     - id: register
       name: Backstageに登録
       action: catalog:register
       input:
-        location:
-          type: url
-          target: https://github.com/${{ parameters.git_owner_name }}/${{ parameters.git_repo_name }}/blob/main/catalog-info.yaml
+        repoContentsUrl: ${{ steps.publish.output.repoContentsUrl }}
+        catalogInfoPath: catalog-info.yaml
 
   output:
     links:
