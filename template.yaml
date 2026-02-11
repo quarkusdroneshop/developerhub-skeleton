@@ -5,7 +5,7 @@ metadata:
   title: Quarkus S2I App Template
   description: Quarkus アプリケーションを S2I でビルド＆OpenShiftにデプロイ
 spec:
-  owner: user:guest
+  owner: user:default/nmushino
   type: service
 
   parameters:
@@ -32,9 +32,9 @@ spec:
             - b-cluster
             - c-cluster
           enumNames:
-            - Aクラスタ（フロント）
-            - Bクラスタ（サービス）
-            - Cクラスタ（バックヤード）
+            - a-cluster
+            - b-cluster
+            - c-cluster
 
   steps:
     - id: fetch
