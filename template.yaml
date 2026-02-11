@@ -35,14 +35,14 @@ spec:
             - a-cluster
             - b-cluster
             - c-cluster
-          owner:
-            title: オーナー
-            type: string
-            ui:field: EntityPicker
-            ui:options:
-              allowedKinds:
-                - User
-                - Group
+        owner:
+          title: オーナー
+          type: string
+          ui:field: EntityPicker
+          ui:options:
+            allowedKinds:
+              - User
+              - Group
 
   steps:
     - id: fetch
