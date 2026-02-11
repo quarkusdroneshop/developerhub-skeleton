@@ -35,6 +35,14 @@ spec:
             - a-cluster
             - b-cluster
             - c-cluster
+          owner:
+            title: オーナー
+            type: string
+            ui:field: EntityPicker
+            ui:options:
+              allowedKinds:
+                - User
+                - Group
 
   steps:
     - id: fetch
@@ -47,6 +55,7 @@ spec:
           git_owner_name: ${{ parameters.git_owner_name }}
           git_repo_name: ${{ parameters.git_repo_name }}
           cluster_name: ${{ parameters.cluster_name }}
+          owner: ${{ parameters.owner }}
 
     - id: publish
       name: GitHubへPush

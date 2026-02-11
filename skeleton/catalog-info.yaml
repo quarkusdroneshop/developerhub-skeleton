@@ -13,4 +13,4 @@ spec:
   type: service
   lifecycle: production
   owner: ${{ values.owner }}
-  system: b-cluster
+  system: ${{ values.cluster_name }}
