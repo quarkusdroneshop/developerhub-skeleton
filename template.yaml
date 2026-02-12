@@ -37,11 +37,11 @@ spec:
             - a-cluster
             - b-cluster
             - c-cluster
-        separator:
-          type: string
-          title: ""
-          description: |
-            ---
+
+    - title: 所有者情報
+      required:
+        - owner
+      properties:
         owner:
           title: オーナー
           type: string
