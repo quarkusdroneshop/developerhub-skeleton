@@ -79,7 +79,7 @@ spec:
         argoInstance: main
         namespace: openshift-gitops
         repoUrl: https://github.com/${{ parameters.git_owner_name }}/${{ parameters.git_repo_name }}.git
-        path: 'argocd/'
+        path: '.'
         
     - id: register
       name: Backstageに登録
