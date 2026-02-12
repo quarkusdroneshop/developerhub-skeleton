@@ -37,6 +37,11 @@ spec:
             - a-cluster
             - b-cluster
             - c-cluster
+        separator:
+          type: string
+          title: ""
+          description: |
+            ---
         owner:
           title: オーナー
           type: string
