@@ -71,6 +71,16 @@ spec:
         defaultBranch: main
         repoVisibility: public
 
+    - id: argocd
+      name: Deploy with ArgoCD
+      action: argocd:create-resources
+      input:
+        appName: ${{ parameters.app_name }}-init
+        argoInstance: main
+        namespace: openshift-gitops
+        repoUrl: https://${{ parameters.git_host_url }}/${{ parameters.git_owner_name }}/${{ parameters.git_repo_name }}.git
+        path: 'argocd/'
+        
     - id: register
       name: Backstageに登録
       action: catalog:register

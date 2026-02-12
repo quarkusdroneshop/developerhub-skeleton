@@ -7,6 +7,7 @@ metadata:
     app: reward
   annotations:
     backstage.io/kubernetes-id: ${{ values.app_name }}
+    argocd/app-selector: app.kubernetes.io/instance=${{ values.app_name }}-init
     tektonci.io/pipeline: ${{ values.app_name }}
     tekton.dev/type: pipeline
 spec:
