@@ -56,9 +56,8 @@ spec:
         defaultBranch: main
         repoVisibility: public
 
-
     - id: deploy
-      name: Trigger Tekton via Webhook
+      name: Trigger Tekton
       action: http:request
       input:
         method: POST
