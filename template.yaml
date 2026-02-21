@@ -33,7 +33,7 @@ spec:
           type: string
           ui:field: EntityPicker
           ui:options:
-            allowedKinds: [User, Group]
+            allowedKinds: [User]
 
   steps:
     - id: fetch
@@ -61,7 +61,7 @@ spec:
       action: http:request
       input:
         method: POST
-        url: https://el-reward-listener-quarkusdroneshop-cicd.apps.<your-domain>
+        url: https://el-reward-listener-quarkusdroneshop-cicd.apps.cluster-mczlk.mczlk.sandbox3568.opentlc.com
         headers:
           Content-Type: application/json
         body:
