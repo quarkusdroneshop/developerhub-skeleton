@@ -1,0 +1,94 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: quarkus-s2i-template
+  title: Quarkus S2I App Template
+  description: Quarkus アプリケーションを S2I でビルド＆OpenShiftにデプロイ
+spec:
+  owner: user:default/nmushino
+  type: service
+
+  parameters:
+    - title: アプリケーション情報
+      required:
+        - app_name
+        - git_owner_name
+        - git_repo_name
+        - cluster_name
+      properties:
+        app_name:
+          type: string
+        git_owner_name:
+          type: string
+        git_repo_name:
+          type: string
+        cluster_name:
+          type: string
+          enum: [a-cluster, b-cluster, c-cluster]
+
+    - title: 所有者情報
+      required: [owner]
+      properties:
+        owner:
+          type: string
+          ui:field: EntityPicker
+          ui:options:
+            allowedKinds: [User, Group]
+
+  steps:
+    - id: fetch
+      name: テンプレート取得
+      action: fetch:template
+      input:
+        url: ./skeleton
+        values:
+          app_name: ${{ parameters.app_name }}
+          git_owner_name: ${{ parameters.git_owner_name }}
+          git_repo_name: ${{ parameters.git_repo_name }}
+          cluster_name: ${{ parameters.cluster_name }}
+          owner: ${{ parameters.owner }}
+
+    - id: publish
+      name: GitHubへPush
+      action: publish:github
+      input:
+        repoUrl: github.com?owner=${{ parameters.git_owner_name }}&repo=${{ parameters.git_repo_name }}
+        defaultBranch: main
+        repoVisibility: public
+
+    - id: deploy
+      name: Trigger Tekton via Webhook
+      action: http:request
+      input:
+        method: POST
+        url: https://el-reward-listener-quarkusdroneshop-cicd.apps.<your-domain>
+        headers:
+          Content-Type: application/json
+        body:
+          ref: refs/heads/main
+          gitUrl: https://github.com/${{ parameters.git_owner_name }}/${{ parameters.git_repo_name }}.git
+          
+    - id: argocd
+      name: Deploy with ArgoCD
+      action: argocd:create-resources
+      input:
+        appName: ${{ parameters.app_name }}-init
+        argoInstance: main
+        namespace: quarkusdroneshop-cicd
+        repoUrl: https://github.com/${{ parameters.git_owner_name }}/${{ parameters.git_repo_name }}.git
+        path: './openshift'
+
+    - id: register
+      name: Backstageに登録
+      action: catalog:register
+      input:
+        repoContentsUrl: https://github.com/${{ parameters.git_owner_name }}/${{ parameters.git_repo_name }}/blob/main
+        catalogInfoPath: /catalog-info.yaml
+
+  output:
+    links:
+      - title: GitHub リポジトリ
+        url: ${{ steps['publish'].output.remoteUrl }}
+      - title: Backstage エンティティ
+        icon: catalog
+        entityRef: ${{ steps['register'].output.entityRef }}
