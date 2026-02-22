@@ -1,0 +1,60 @@
+# # ────────────────
+# # ベースイメージ
+# # ────────────────
+# FROM registry.redhat.io/rhdh/rhdh-hub-rhel9:1.8.3
+
+# # ────────────────
+# # root に切り替えて Node.js + Yarn を追加
+# # ────────────────
+# USER root
+
+# # 既存の nodejs モジュールをリセットして Node.js 20 を有効化
+# RUN microdnf module reset nodejs -y && \
+#     microdnf module enable nodejs:20 -y && \
+#     microdnf install -y nodejs npm && \
+#     npm install --global yarn && \
+#     microdnf clean all
+
+# RUN yarn install
+# RUN yarn add @backstage-community/plugin-scaffolder-backend-module-tekton
+# RUN yarn add @roadiehq/scaffolder-backend-module-http-request
+# RUN yarn backstage-cli package build
+
+# # 作業ディレクトリ
+# WORKDIR /opt/app-root/src
+
+# # Backend の package.json と yarn.lock をコピー
+# COPY packages/backend/package.json packages/backend/package.json
+# COPY packages/backend/yarn.lock packages/backend/yarn.lock
+# COPY packages/backend/.yarn packages/backend/.yarn
+# COPY packages/backend/node_modules packages/backend/node_modules
+# COPY packages/backend/dynamic-plugins ./dynamic-plugins
+# COPY packages/backend/src ./src
+
+# # # 依存ライブラリのインストール
+# # RUN yarn install --frozen-lockfile
+
+# # 必要な Backstage プラグインを追加
+# # RUN yarn add @roadiehq/scaffolder-backend-module-http-request
+
+# # Tekton プラグインは GitHub から直接インストール（必要に応じて有効化）
+# # RUN yarn add github:backstage-community/plugin-scaffolder-backend-module-tekton
+
+# #RUN yarn add @backstage-community/plugin-scaffolder-backend-module-tekton
+
+# # 環境変数
+# ENV NODE_ENV=production
+
+# # 権限を通常ユーザーに戻す（RHDH Hub 推奨）
+# USER 1001
+
+# # エントリポイントは Operator が上書きする場合は不要
+# # CMD ["./start-backstage.sh"]
+
+FROM registry.redhat.io/rhdh/rhdh-hub-rhel9:1.8.3
+
+USER root
+
+COPY packages/dynamic-plugins/ /opt/app-root/src/dynamic-plugins/
+
+USER 1001

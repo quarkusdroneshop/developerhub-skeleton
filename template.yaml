@@ -56,17 +56,13 @@ spec:
         defaultBranch: main
         repoVisibility: public
 
-    - id: deploy
-      name: Trigger Tekton
-      action: http:request
+    - id: run-pipeline
+      name: Run Tekton Pipeline
+      action: tekton:pipelineRun
       input:
-        method: POST
-        url: https://el-reward-listener-quarkusdroneshop-cicd.apps.cluster-mczlk.mczlk.sandbox3568.opentlc.com
-        headers:
-          Content-Type: application/json
-        body:
-          ref: refs/heads/main
-          gitUrl: https://github.com/${{ parameters.git_owner_name }}/${{ parameters.git_repo_name }}.git
+        namespace: quarkusdroneshop-rhdh
+        pipelineRef:
+          name: sample-pipeline
           
     - id: argocd
       name: Deploy with ArgoCD
