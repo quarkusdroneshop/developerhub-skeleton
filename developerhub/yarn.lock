@@ -2919,6 +2919,54 @@ __metadata:
   languageName: node
   linkType: soft
 
+"@backstage-community/plugin-tekton-backend@workspace:plugins/tekton":
+  version: 0.0.0-use.local
+  resolution: "@backstage-community/plugin-tekton-backend@workspace:plugins/tekton"
+  dependencies:
+    "@aonic-ui/pipelines": "npm:^3.1.0"
+    "@axe-core/playwright": "npm:^4.11.0"
+    "@backstage-community/plugin-tekton-common": "workspace:^"
+    "@backstage-community/plugin-tekton-react": "workspace:^"
+    "@backstage/catalog-model": "npm:^1.7.6"
+    "@backstage/cli": "npm:^0.35.3"
+    "@backstage/core-components": "npm:^0.18.6"
+    "@backstage/core-plugin-api": "npm:^1.12.2"
+    "@backstage/dev-utils": "npm:^1.1.19"
+    "@backstage/frontend-plugin-api": "npm:^0.13.4"
+    "@backstage/plugin-catalog-react": "npm:^1.21.6"
+    "@backstage/plugin-kubernetes-common": "npm:^0.9.9"
+    "@backstage/plugin-kubernetes-react": "npm:^0.5.15"
+    "@backstage/plugin-permission-react": "npm:^0.4.39"
+    "@backstage/test-utils": "npm:^1.7.14"
+    "@backstage/theme": "npm:^0.7.1"
+    "@kubernetes/client-node": "npm:1.4.0"
+    "@material-ui/core": "npm:^4.9.13"
+    "@material-ui/icons": "npm:^4.11.3"
+    "@material-ui/lab": "npm:^4.0.0-alpha.45"
+    "@mui/icons-material": "npm:5.18.0"
+    "@patternfly/patternfly": "npm:^6.0.0"
+    "@patternfly/react-core": "npm:^6.0.0"
+    "@patternfly/react-table": "npm:^6.3.1"
+    "@patternfly/react-tokens": "npm:^6.0.0"
+    "@patternfly/react-topology": "npm:^6.0.0"
+    "@playwright/test": "npm:^1.57.0"
+    "@tanstack/react-query": "npm:^5.62.7"
+    "@testing-library/jest-dom": "npm:6.9.1"
+    "@testing-library/react": "npm:14.3.1"
+    "@types/dagre": "npm:^0.7.52"
+    "@types/lodash": "npm:4.17.23"
+    classnames: "npm:^2.3.2"
+    cross-fetch: "npm:4.1.0"
+    dagre: "npm:^0.8.5"
+    lodash: "npm:^4.17.21"
+    react-use: "npm:^17.4.0"
+  peerDependencies:
+    react: ^17.0.0 || ^18.0.0
+    react-dom: ^17.0.0 || ^18.0.0
+    react-router-dom: ^6.0.0
+  languageName: unknown
+  linkType: soft
+
 "@backstage-community/plugin-tekton-common@npm:^1.18.0":
   version: 1.18.0
   resolution: "@backstage-community/plugin-tekton-common@npm:1.18.0"
@@ -3002,54 +3050,6 @@ __metadata:
   checksum: 10c0/0e932e23f79dc2cecd33fd0b4a4bfb3b510c78f3b1bc625747260551f87f0522b484255ded6dba54bfb79d6f49b3017797c98b4b1049f46aa9cd2801e6f41eb3
   languageName: node
   linkType: hard
-
-"@backstage-community/plugin-tekton@workspace:plugins/tekton":
-  version: 0.0.0-use.local
-  resolution: "@backstage-community/plugin-tekton@workspace:plugins/tekton"
-  dependencies:
-    "@aonic-ui/pipelines": "npm:^3.1.0"
-    "@axe-core/playwright": "npm:^4.11.0"
-    "@backstage-community/plugin-tekton-common": "workspace:^"
-    "@backstage-community/plugin-tekton-react": "workspace:^"
-    "@backstage/catalog-model": "npm:^1.7.6"
-    "@backstage/cli": "npm:^0.35.3"
-    "@backstage/core-components": "npm:^0.18.6"
-    "@backstage/core-plugin-api": "npm:^1.12.2"
-    "@backstage/dev-utils": "npm:^1.1.19"
-    "@backstage/frontend-plugin-api": "npm:^0.13.4"
-    "@backstage/plugin-catalog-react": "npm:^1.21.6"
-    "@backstage/plugin-kubernetes-common": "npm:^0.9.9"
-    "@backstage/plugin-kubernetes-react": "npm:^0.5.15"
-    "@backstage/plugin-permission-react": "npm:^0.4.39"
-    "@backstage/test-utils": "npm:^1.7.14"
-    "@backstage/theme": "npm:^0.7.1"
-    "@kubernetes/client-node": "npm:1.4.0"
-    "@material-ui/core": "npm:^4.9.13"
-    "@material-ui/icons": "npm:^4.11.3"
-    "@material-ui/lab": "npm:^4.0.0-alpha.45"
-    "@mui/icons-material": "npm:5.18.0"
-    "@patternfly/patternfly": "npm:^6.0.0"
-    "@patternfly/react-core": "npm:^6.0.0"
-    "@patternfly/react-table": "npm:^6.3.1"
-    "@patternfly/react-tokens": "npm:^6.0.0"
-    "@patternfly/react-topology": "npm:^6.0.0"
-    "@playwright/test": "npm:^1.57.0"
-    "@tanstack/react-query": "npm:^5.62.7"
-    "@testing-library/jest-dom": "npm:6.9.1"
-    "@testing-library/react": "npm:14.3.1"
-    "@types/dagre": "npm:^0.7.52"
-    "@types/lodash": "npm:4.17.23"
-    classnames: "npm:^2.3.2"
-    cross-fetch: "npm:4.1.0"
-    dagre: "npm:^0.8.5"
-    lodash: "npm:^4.17.21"
-    react-use: "npm:^17.4.0"
-  peerDependencies:
-    react: ^17.0.0 || ^18.0.0
-    react-dom: ^17.0.0 || ^18.0.0
-    react-router-dom: ^6.0.0
-  languageName: unknown
-  linkType: soft
 
 "@backstage-community/plugins@workspace:plugins/community-plugins":
   version: 0.0.0-use.local
