@@ -7,21 +7,7 @@
  */
 
 import { createBackend } from '@backstage/backend-defaults';
-import { tektonActions } from '@janus-idp/backstage-plugin-tekton';
-import { createRouter as createScaffolderRouter } from '@backstage/plugin-scaffolder-backend';
-import { tektonActions } from '@backstage/plugins/tekton';
-import type { Router } from 'express';
-
-export default async function createTektonPlugin(env: {
-  logger: any;
-  database: any;
-}): Promise<Router> {
-  return await createRouter({
-    logger: env.logger,
-    database: env.database,
-    actions: [...tektonActions],  // ← ここで tektonActions を展開して登録
-  });
-}
+import { createHttpRequestAction } from '@roadiehq/scaffolder-backend-module-http-request';
 
 async function main() {
   const backend = createBackend();
@@ -35,6 +21,25 @@ async function main() {
   backend.add(
     import('@backstage/plugin-scaffolder-backend-module-notifications'),
   );
+  backend.add(
+    import('@roadiehq/scaffolder-backend-module-http-request'),
+  );
+
+  // ✅ 正しい追加方法
+  backend.add({
+    pluginId: 'scaffolder',
+    moduleId: 'http-request-module',
+    register(env) {
+      env.registerInit({
+        deps: {
+          scaffolder: scaffolderActionsExtensionPoint,
+        },
+        async init({ scaffolder }) {
+          scaffolder.addActions(createHttpRequestAction());
+        },
+      });
+    },
+  });
 
   // techdocs plugin
   backend.add(import('@backstage/plugin-techdocs-backend'));
@@ -79,23 +84,9 @@ async function main() {
   backend.add(import('@backstage/plugin-notifications-backend'));
   backend.add(import('@backstage/plugin-signals-backend'));
 
-  // Tekton plugin を追加
-  // Scaffolder backend を作るときに tektonActions を渡す
-  async function main() {
-    const backend = createBackend();
-  
-    // Scaffolder + Tekton actions
-    backend.add(async env => {
-      const scaffolderRouter = await createScaffolderRouter({
-        logger: env.logger,
-        database: env.database,
-        actions: [...tektonActions], // ← Tekton actions を登録
-      });
-      env.router.use('/scaffolder', scaffolderRouter);
-    });
-  
-    await backend.start();
-  }
+  backend.start();
+
+await backend.start();
 }
 
 main().catch(err => {
