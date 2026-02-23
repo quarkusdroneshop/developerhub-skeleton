@@ -58,12 +58,13 @@ spec:
 
     - id: run-pipeline
       name: Run Tekton Pipeline
-      action: http:request
+      action: http:backstage:request
       input:
         method: POST
-        url: http://el-backstage-listener.quarkusdroneshop-cicd.svc.cluster.local:8080/
+        path: /tekton-trigger
         headers:
           Content-Type: application/json
+          Authorization: ""
         body:
           repoUrl: ${{ steps.publish.output.remoteUrl }}
               
