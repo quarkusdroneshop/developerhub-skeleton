@@ -55,6 +55,6 @@ FROM registry.redhat.io/rhdh/rhdh-hub-rhel9:1.8.3
 
 USER root
 
-COPY packages/dynamic-plugins/ /opt/app-root/src/dynamic-plugins/
+COPY packages/ /opt/app-root/src/
 
 USER 1001
