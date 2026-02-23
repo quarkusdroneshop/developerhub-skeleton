@@ -61,12 +61,12 @@ spec:
       action: http:backstage:request
       input:
         method: POST
-        path: /tekton-trigger
+        path: /tekton-trigger/
         headers:
           Content-Type: application/json
         body:
-          repoUrl: ${{ parameters.repoUrl }}
-          
+          repoUrl: ${{ steps.publish.output.remoteUrl }}
+              
     - id: argocd
       name: Deploy with ArgoCD
       action: argocd:create-resources
