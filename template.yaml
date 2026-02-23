@@ -58,11 +58,14 @@ spec:
 
     - id: run-pipeline
       name: Run Tekton Pipeline
-      action: tekton:pipelineRun
+      action: http:backstage:request
       input:
-        namespace: quarkusdroneshop-rhdh
-        pipelineRef:
-          name: sample-pipeline
+        method: POST
+        path: /tekton-trigger
+        headers:
+          Content-Type: application/json
+        body:
+          repoUrl: ${{ parameters.repoUrl }}
           
     - id: argocd
       name: Deploy with ArgoCD
