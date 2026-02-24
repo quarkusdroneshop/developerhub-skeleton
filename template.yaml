@@ -48,16 +48,19 @@ spec:
           cluster_name: ${{ parameters.cluster_name }}
           owner: ${{ parameters.owner }}
 
-    - id: create-and-run
-      name: Create Pipeline and Run
-      action: kubernetes:apply
+    - id: create-pipeline
+      name: Create Tekton Pipeline
+      action: http:backstage:request
       input:
-        namespace: quarkusdroneshop-cicd
-        manifest: |
+        method: POST
+        path: /api/proxy/kubernetes/apis/tekton.dev/v1/namespaces/quarkusdroneshop-cicd/pipelines
+        headers:
+          Content-Type: application/json
+        body:
           apiVersion: tekton.dev/v1
           kind: Pipeline
           metadata:
-            name: reward-build-pipeline
+            name: reward-build-${{ parameters.name }}
           spec:
             params:
               - name: repoUrl
@@ -73,21 +76,14 @@ spec:
                       image: registry.access.redhat.com/ubi9/ubi
                       script: |
                         echo "Building $(params.repoUrl)"
-                params:
-                  - name: repoUrl
-                    value: $(params.repoUrl)
-          ---
-          apiVersion: tekton.dev/v1
-          kind: PipelineRun
-          metadata:
-            generateName: reward-build-run-
-          spec:
-            pipelineRef:
-              name: reward-build-pipeline
-            params:
-              - name: repoUrl
-                value: https://github.com/${{ parameters.git_owner_name }}/${{ parameters.git_repo_name }}.git
-              
+
+    # - id: create
+    #   action: execute:script
+    #   input:
+    #     shell: bash
+    #     script: |
+    #       oc apply -f pipeline.yaml
+
     - id: argocd
       name: Deploy with ArgoCD
       action: argocd:create-resources
