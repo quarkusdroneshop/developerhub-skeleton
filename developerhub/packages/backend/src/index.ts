@@ -1,5 +1,5 @@
 import { createBackend } from '@backstage/backend-defaults';
-import { createHttpRequestAction } from '@roadiehq/scaffolder-backend-module-http-request';
+import { tektonBackendModule } from '@backstage/community-plugin-tekton-backend';
 
 async function main() {
   const backend = createBackend();
@@ -10,10 +10,6 @@ async function main() {
   backend.add(import('@backstage/plugin-scaffolder-backend'));
   backend.add(import('@backstage/plugin-scaffolder-backend-module-github'));
 
-  backend.add(
-    import('@roadiehq/scaffolder-backend-module-http-request'),
-  );
-
   backend.add(import('@backstage/plugin-techdocs-backend'));
   backend.add(import('@backstage/plugin-auth-backend'));
   backend.add(import('@backstage/plugin-auth-backend-module-guest-provider'));
@@ -23,6 +19,9 @@ async function main() {
   backend.add(import('@backstage/plugin-kubernetes-backend'));
   backend.add(import('@backstage/plugin-notifications-backend'));
   backend.add(import('@backstage/plugin-signals-backend'));
+
+  // Tekton backend module
+  backend.add(tektonBackendModule);
 
   await backend.start();
 }

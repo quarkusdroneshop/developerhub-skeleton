@@ -56,6 +56,36 @@ spec:
         defaultBranch: main
         repoVisibility: public
 
+    - id: create-pipeline
+      name: Create Tekton Pipeline
+      action: kubernetes:apply
+      input:
+        cluster: "${K8S_CLUSTER_NAME}"
+        namespace: quarkusdroneshop-cicd
+        manifest: |
+          apiVersion: tekton.dev/v1beta1
+          kind: Pipeline
+          metadata:
+            name: my-pipeline
+          spec:
+            params:
+              - name: repoUrl
+                type: string
+            tasks:
+              - name: echo
+                taskSpec:
+                  params:
+                    - name: repoUrl
+                      type: string
+                  steps:
+                    - name: print
+                      image: registry.access.redhat.com/ubi8/ubi
+                      script: |
+                        echo "Repo URL: $(params.repoUrl)"
+                params:
+                  - name: repoUrl
+                    value: $(params.repoUrl)
+                    
     - id: trigger-pipeline
       name: Trigger Tekton Pipeline
       action: tekton:triggerPipelineRun
