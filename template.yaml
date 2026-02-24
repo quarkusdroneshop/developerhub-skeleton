@@ -56,14 +56,15 @@ spec:
         defaultBranch: main
         repoVisibility: public
 
-    - id: run-pipeline
-      action: script
-      name: Trigger Tekton
+    - id: trigger-pipeline
+      name: Trigger Tekton Pipeline
+      action: tekton:triggerPipelineRun
       input:
-        script: |
-          curl -X POST http://el-backstage-listener.quarkusdroneshop-cicd.svc.cluster.local:8080/ \
-          -H "Content-Type: application/json" \
-          -d '{"repoUrl":"${{ steps.publish.output.remoteUrl }}"}'
+        cluster: "${K8S_CLUSTER_NAME}"        # cluster name from app-config
+        namespace: "quarkusdroneshop-cicd"   # Tekton が存在する namespace
+        pipelineName: "my-pipeline"          # 実行したい Pipeline 名
+        params:
+          repoUrl: "${{ steps.publish.output.remoteUrl }}"
               
     - id: argocd
       name: Deploy with ArgoCD
