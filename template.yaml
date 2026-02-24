@@ -48,25 +48,16 @@ spec:
           cluster_name: ${{ parameters.cluster_name }}
           owner: ${{ parameters.owner }}
 
-    - id: publish
-      name: GitHubへPush
-      action: publish:github
-      input:
-        repoUrl: github.com?owner=${{ parameters.git_owner_name }}&repo=${{ parameters.git_repo_name }}
-        defaultBranch: main
-        repoVisibility: public
-
-    - id: create-pipeline
-      name: Create Tekton Pipeline
+    - id: create-and-run
+      name: Create Pipeline and Run
       action: kubernetes:apply
       input:
-        cluster: "${K8S_CLUSTER_NAME}"
         namespace: quarkusdroneshop-cicd
         manifest: |
-          apiVersion: tekton.dev/v1beta1
+          apiVersion: tekton.dev/v1
           kind: Pipeline
           metadata:
-            name: my-pipeline
+            name: reward-build-pipeline
           spec:
             params:
               - name: repoUrl
@@ -79,22 +70,23 @@ spec:
                       type: string
                   steps:
                     - name: print
-                      image: registry.access.redhat.com/ubi8/ubi
+                      image: registry.access.redhat.com/ubi9/ubi
                       script: |
-                        echo "Repo URL: $(params.repoUrl)"
+                        echo "Building $(params.repoUrl)"
                 params:
                   - name: repoUrl
                     value: $(params.repoUrl)
-                    
-    - id: trigger-pipeline
-      name: Trigger Tekton Pipeline
-      action: tekton:triggerPipelineRun
-      input:
-        cluster: "${K8S_CLUSTER_NAME}"        # cluster name from app-config
-        namespace: "quarkusdroneshop-cicd"   # Tekton が存在する namespace
-        pipelineName: "my-pipeline"          # 実行したい Pipeline 名
-        params:
-          repoUrl: "${{ steps.publish.output.remoteUrl }}"
+          ---
+          apiVersion: tekton.dev/v1
+          kind: PipelineRun
+          metadata:
+            generateName: reward-build-run-
+          spec:
+            pipelineRef:
+              name: reward-build-pipeline
+            params:
+              - name: repoUrl
+                value: https://github.com/${{ parameters.git_owner_name }}/${{ parameters.git_repo_name }}.git
               
     - id: argocd
       name: Deploy with ArgoCD

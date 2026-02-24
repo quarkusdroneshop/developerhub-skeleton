@@ -1,0 +1,20 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: app-build
+  namespace: quarkusdroneshop-cicd
+spec:
+  params:
+    - name: repoUrl
+      type: string
+  tasks:
+    - name: build
+      taskSpec:
+        params:
+          - name: repoUrl
+            type: string
+        steps:
+          - name: echo
+            image: registry.access.redhat.com/ubi9/ubi
+            script: |
+              echo "Building $(params.repoUrl)"

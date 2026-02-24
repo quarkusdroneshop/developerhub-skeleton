@@ -1,5 +1,4 @@
 import { createBackend } from '@backstage/backend-defaults';
-import { tektonBackendModule } from '@backstage/community-plugin-tekton-backend';
 
 async function main() {
   const backend = createBackend();
@@ -20,8 +19,10 @@ async function main() {
   backend.add(import('@backstage/plugin-notifications-backend'));
   backend.add(import('@backstage/plugin-signals-backend'));
 
-  // Tekton backend module
-  backend.add(tektonBackendModule);
+  backend.add(import('@backstage/plugin-scaffolder-backend-module-kubernetes'));
+  backend.add(import('@backstage/community-plugin-scaffolder-backend-module-tekton'));
+
+  backend.add(import('@backstage/community-plugin-tekton-backend'));
 
   await backend.start();
 }
