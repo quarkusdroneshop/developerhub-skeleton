@@ -57,14 +57,13 @@ spec:
         repoVisibility: public
 
     - id: run-pipeline
-      action: http:request
+      action: script
+      name: Trigger Tekton
       input:
-        method: POST
-        url: http://el-backstage-listener.quarkusdroneshop-cicd.svc.cluster.local:8080/
-        headers:
-          Content-Type: application/json
-        body:
-          repoUrl: ${{ steps.publish.output.remoteUrl }}
+        script: |
+          curl -X POST http://el-backstage-listener.quarkusdroneshop-cicd.svc.cluster.local:8080/ \
+          -H "Content-Type: application/json" \
+          -d '{"repoUrl":"${{ steps.publish.output.remoteUrl }}"}'
               
     - id: argocd
       name: Deploy with ArgoCD
