@@ -64,7 +64,7 @@ spec:
         argoInstance: main
         namespace: quarkusdroneshop-cicd
         repoUrl: https://github.com/${{ parameters.git_owner_name }}/${{ parameters.git_repo_name }}.git
-        path: './pipline/quarkusdroneshop-reword/pipeline'
+        path: pipline/quarkusdroneshop-reword/pipeline
               
     - id: register
       name: Backstageに登録
