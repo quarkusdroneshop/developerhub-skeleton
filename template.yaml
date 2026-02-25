@@ -50,6 +50,7 @@ spec:
           git_owner_name: ${{ parameters.git_owner_name }}
           git_repo_name: ${{ parameters.git_repo_name }}
           cluster_name: ${{ parameters.cluster_name }}
+          image_tag: ${{ parameters.image_tag }}
           owner: ${{ parameters.owner }}
 
     - id: publish
@@ -60,8 +61,39 @@ spec:
         defaultBranch: main
         repoVisibility: public
                     
+    - id: create-pipelinerun
+      name: Tekton PipelineRun YAML 作成
+      action: filesystem:write
+      input:
+        path: pipelinerun-{{ parameters.app_name }}.yaml
+        content: |
+          apiVersion: tekton.dev/v1
+          kind: PipelineRun
+          metadata:
+            name: build-and-push-${{ parameters.app_name }}-{{ randomString(5) }}
+            namespace: quarkusdroneshop-cicd
+          spec:
+            pipelineRef:
+              name: build-and-push-${{ parameters.app_name }}
+            workspaces:
+              - name: shared-workspace
+                persistentVolumeClaim:
+                  claimName: shared-workspace
+            params:
+              - name: IMAGE_TAG
+                value: ${{ parameters.image_tag }}
+
+    - id: push-pipelinerun
+      name: PipelineRun を Git に push
+      action: publish:github
+      input:
+        repoUrl: github.com?owner=${{ parameters.git_owner_name }}&repo=${{ parameters.git_repo_name }}
+        files:
+          - pipelinerun-{{ parameters.app_name }}.yaml
+        commitMessage: "Add PipelineRun for ${{ parameters.app_name }}"
+
     - id: deploy-argo
-      name: Deploy via ArgoCD
+      name: ArgoCD でデプロイ
       action: argocd:create-resources
       input:
         appName: quarkusdroneshop-reward-pipeline
@@ -69,11 +101,6 @@ spec:
         namespace: quarkusdroneshop-cicd
         repoUrl: https://github.com/quarkusdroneshop/quarkusdroneshop-reward.git
         path: pipline/quarkusdroneshop-reword
-        # ここで images を上書きして IMAGE_TAG を反映
-        kustomize:
-          images:
-            - name: quarkusdroneshop-reward
-              newTag: ${{ parameters.image_tag }}
 
     - id: register
       name: Backstageに登録
