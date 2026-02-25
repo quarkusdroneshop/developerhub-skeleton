@@ -3,7 +3,7 @@ kind: Template
 metadata:
   name: quarkus-s2i-template
   title: Quarkus S2I App Template
-  description: Quarkus アプリケーションを S2I でビルド＆OpenShiftにデプロイ
+  description: Quarkus アプリケーションを S2I でビルド＆OpenShiftにデプロイし、Tekton PipelineRun を待機
 spec:
   owner: user:default/nmushino
   type: service
@@ -38,6 +38,22 @@ spec:
           ui:field: EntityPicker
           ui:options:
             allowedKinds: [User]
+
+    - title: Tekton Pipeline情報
+      properties:
+        namespace:
+          type: string
+          description: Kubernetes namespace where the Tekton pipeline exists
+        pipelineName:
+          type: string
+          description: Tekton Pipeline to run
+        parameters:
+          type: object
+          description: Optional pipeline parameters
+        timeoutSeconds:
+          type: number
+          description: Timeout in seconds to wait for pipeline completion
+          default: 600
 
   steps:
     - id: fetch
@@ -101,6 +117,15 @@ spec:
         namespace: quarkusdroneshop-cicd
         repoUrl: https://github.com/quarkusdroneshop/quarkusdroneshop-reward.git
         path: pipline/quarkusdroneshop-reword
+
+    - id: runTekton
+      name: Run Tekton Pipeline
+      action: tekton:run-pipeline-wait
+      input:
+        namespace: ${{ parameters.namespace }}
+        pipelineName: ${{ parameters.pipelineName }}
+        parameters: ${{ parameters.parameters }}
+        timeoutSeconds: ${{ parameters.timeoutSeconds }}
 
     - id: register
       name: Backstageに登録
