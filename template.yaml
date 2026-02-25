@@ -48,13 +48,14 @@ spec:
           cluster_name: ${{ parameters.cluster_name }}
           owner: ${{ parameters.owner }}
 
-    - id: copy-pipeline
-      name: Copy Pipeline YAML
-      action: filesystem:copy
+    - id: publish
+      name: GitHubへPush
+      action: publish:github
       input:
-        from: ./pipline/quarkusdroneshop-reword/pipeline/deploy-pipeline.yaml
-        to: pipeline.yaml
-
+        repoUrl: github.com?owner=${{ parameters.git_owner_name }}&repo=${{ parameters.git_repo_name }}
+        defaultBranch: main
+        repoVisibility: public
+                    
     - id: argocd
       name: Deploy with ArgoCD
       action: argocd:create-resources
@@ -63,8 +64,8 @@ spec:
         argoInstance: main
         namespace: quarkusdroneshop-cicd
         repoUrl: https://github.com/${{ parameters.git_owner_name }}/${{ parameters.git_repo_name }}.git
-        path: './openshift'
-
+        path: './pipline/quarkusdroneshop-reword/pipeline'
+              
     - id: register
       name: Backstageに登録
       action: catalog:register
