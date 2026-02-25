@@ -65,7 +65,36 @@ spec:
         namespace: quarkusdroneshop-cicd
         repoUrl: https://github.com/quarkusdroneshop/quarkusdroneshop-reward.git
         path: pipline/quarkusdroneshop-reword/pipeline
-                  
+
+    - id: create-pipelinerun
+      name: Create PipelineRun YAML
+      action: filesystem:write
+      input:
+        path: pipelinerun.yaml
+        content: |
+          apiVersion: tekton.dev/v1
+          kind: PipelineRun
+          metadata:
+            name: build-and-push-quarkusdroneshop-reward-run-{{ randomString(5) }}
+            namespace: quarkusdroneshop-cicd
+          spec:
+            pipelineRef:
+              name: build-and-push-quarkusdroneshop-reward
+            workspaces:
+              - name: shared-workspace
+                persistentVolumeClaim:
+                  claimName: shared-workspace
+            params:
+              - name: IMAGE_TAG
+                value: latest
+    
+    - id: apply-pipelinerun
+      name: Apply PipelineRun
+      action: execute:script
+      input:
+        shell: bash
+        script: oc apply -f pipelinerun.yaml    
+            
     - id: register
       name: Backstageに登録
       action: catalog:register
