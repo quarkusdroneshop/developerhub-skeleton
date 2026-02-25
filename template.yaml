@@ -48,12 +48,12 @@ spec:
           cluster_name: ${{ parameters.cluster_name }}
           owner: ${{ parameters.owner }}
 
-    - id: test-http
-      name: Test HTTP
-      action: http:request
+    - id: copy-pipeline
+      name: Copy Pipeline YAML
+      action: filesystem:copy
       input:
-        method: GET
-        url: https://example.com
+        from: ./pipline/quarkusdroneshop-reword/pipeline/deploy-pipeline.yaml
+        to: pipeline.yaml
 
     - id: argocd
       name: Deploy with ArgoCD
