@@ -65,6 +65,7 @@ spec:
         namespace: quarkusdroneshop-cicd
         repoUrl: https://github.com/${{ parameters.git_owner_name }}/${{ parameters.git_repo_name }}.git
         path: pipline/quarkusdroneshop-reward
+        targetRevision: main
               
     - id: register
       name: Backstageに登録
