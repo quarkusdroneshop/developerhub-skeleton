@@ -62,6 +62,5 @@ USER root
 #  && rm -f /tmp/oc.tar.gz
 
 COPY packages/ /opt/app-root/src/
-COPY pipline/ /opt/app-root/src/pipline/
 
 USER 1001

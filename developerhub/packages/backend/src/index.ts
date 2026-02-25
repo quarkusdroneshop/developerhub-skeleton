@@ -1,10 +1,14 @@
 import { createBackend } from '@backstage/backend-defaults';
 import { createScaffolderBackend } from '@backstage/plugin-scaffolder-backend';
 import { createFilesystemWriteAction } from '@backstage/plugin-scaffolder-backend';
+import { createGithubAction } from '@backstage/plugin-scaffolder-backend-module-github';
+import { createKubernetesApplyAction } from '@backstage/plugin-scaffolder-backend-module-kubernetes';
+import { createTektonActions } from '@backstage/community-plugin-scaffolder-backend-module-tekton';
 
 async function main() {
   const backend = createBackend({});
 
+  // 基本プラグイン
   backend.add(await import('@backstage/plugin-app-backend'));
   backend.add(await import('@backstage/plugin-proxy-backend'));
 
@@ -12,18 +16,17 @@ async function main() {
   const scaffolder = createScaffolderBackend({
     logger: backend.logger,
     config: backend.config,
+    actions: [
+      createFilesystemWriteAction(), // filesystem:write
+      createGithubAction(),          // GitHub アクション
+      createKubernetesApplyAction(), // Kubernetes apply アクション
+      ...createTektonActions(),      // Tekton ワークフローアクション
+    ],
   });
-
-  // アクション追加
-  scaffolder.addActions([createFilesystemWriteAction()]);
 
   backend.add(scaffolder);
 
   // 他のモジュール
-  backend.add(await import('@backstage/plugin-scaffolder-backend-module-github'));
-  backend.add(await import('@backstage/plugin-scaffolder-backend-module-kubernetes'));
-  backend.add(await import('@backstage/community-plugin-scaffolder-backend-module-tekton'));
-
   backend.add(await import('@backstage/plugin-techdocs-backend'));
   backend.add(await import('@backstage/plugin-auth-backend'));
   backend.add(await import('@backstage/plugin-auth-backend-module-guest-provider'));
@@ -35,6 +38,7 @@ async function main() {
   backend.add(await import('@backstage/plugin-signals-backend'));
   backend.add(await import('@backstage/community-plugin-tekton-backend'));
 
+  // バックエンド起動
   await backend.start();
 }
 
