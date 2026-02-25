@@ -55,6 +55,13 @@ FROM registry.redhat.io/rhdh/rhdh-hub-rhel9:1.8.3
 
 USER root
 
+# RUN curl -L https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/openshift-client-linux.tar.gz \
+#     -o /tmp/oc.tar.gz \
+#  && tar -xzf /tmp/oc.tar.gz -C /usr/local/bin oc kubectl \
+#  && chmod +x /usr/local/bin/oc /usr/local/bin/kubectl \
+#  && rm -f /tmp/oc.tar.gz
+
 COPY packages/ /opt/app-root/src/
+COPY pipline/ /opt/app-root/src/pipline/
 
 USER 1001
