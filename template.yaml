@@ -57,14 +57,14 @@ spec:
         repoVisibility: public
                     
     - id: argocd
-      name: Deploy with ArgoCD
+      name: Deploy Tekton Pipeline via ArgoCD
       action: argocd:create-resources
       input:
-        appName: ${{ parameters.app_name }}-init
+        appName: ${{ parameters.app_name }}-pipeline
         argoInstance: main
         namespace: quarkusdroneshop-cicd
         repoUrl: https://github.com/${{ parameters.git_owner_name }}/${{ parameters.git_repo_name }}.git
-        path: pipline/quarkusdroneshop-reword/pipeline
+        path: pipline/quarkusdroneshop-reward
               
     - id: register
       name: Backstageに登録
