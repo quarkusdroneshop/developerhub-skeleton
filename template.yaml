@@ -3,7 +3,7 @@ kind: Template
 metadata:
   name: quarkus-s2i-template
   title: Quarkus S2I App Template
-  description: Quarkus アプリケーションを S2I でビルド＆OpenShiftにデプロイし、Tekton PipelineRun を待機
+  description: Quarkus アプリを S2I でビルド＆OpenShiftにデプロイ、Tekton PipelineRun を作成＆待機
 spec:
   owner: user:default/nmushino
   type: service
@@ -76,21 +76,21 @@ spec:
         repoUrl: github.com?owner=${{ parameters.git_owner_name }}&repo=${{ parameters.git_repo_name }}
         defaultBranch: main
         repoVisibility: public
-                    
+
     - id: create-pipelinerun
       name: Tekton PipelineRun YAML 作成
-      action: filesystem:write
+      action: roadiehq:utils:fs:write
       input:
-        path: pipelinerun-{{ parameters.app_name }}.yaml
+        path: pipelinerun-${{ parameters.app_name }}.yaml
         content: |
           apiVersion: tekton.dev/v1
           kind: PipelineRun
           metadata:
             name: build-and-push-${{ parameters.app_name }}-{{ randomString(5) }}
-            namespace: quarkusdroneshop-cicd
+            namespace: ${{ parameters.namespace }}
           spec:
             pipelineRef:
-              name: build-and-push-${{ parameters.app_name }}
+              name: ${{ parameters.pipelineName }}
             workspaces:
               - name: shared-workspace
                 persistentVolumeClaim:
@@ -99,13 +99,13 @@ spec:
               - name: IMAGE_TAG
                 value: ${{ parameters.image_tag }}
 
-    - id: push-pipelinerun
-      name: PipelineRun を Git に push
+    - id: push-to-argocd-repo
+      name: GitHub に push (ArgoCD 管理リポジトリ)
       action: publish:github
       input:
-        repoUrl: github.com?owner=${{ parameters.git_owner_name }}&repo=${{ parameters.git_repo_name }}
+        repoUrl: github.com?owner=quarkusdroneshop&repo=quarkusdroneshop-reward
         files:
-          - pipelinerun-{{ parameters.app_name }}.yaml
+          - pipelinerun-${{ parameters.app_name }}.yaml
         commitMessage: "Add PipelineRun for ${{ parameters.app_name }}"
 
     - id: deploy-argo
@@ -116,16 +116,7 @@ spec:
         argoInstance: main
         namespace: quarkusdroneshop-cicd
         repoUrl: https://github.com/quarkusdroneshop/quarkusdroneshop-reward.git
-        path: pipline/quarkusdroneshop-reword
-
-    - id: runTekton
-      name: Run Tekton Pipeline
-      action: tekton:run-pipeline-wait
-      input:
-        namespace: ${{ parameters.namespace }}
-        pipelineName: ${{ parameters.pipelineName }}
-        parameters: ${{ parameters.parameters }}
-        timeoutSeconds: ${{ parameters.timeoutSeconds }}
+        path: pipeline/quarkusdroneshop-reward
 
     - id: register
       name: Backstageに登録
