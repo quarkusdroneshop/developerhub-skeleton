@@ -62,16 +62,10 @@ spec:
           description: The namespace to create the PVC in
           required: true
           default: quarkusdroneshop-cicd
-
-    - title: PVC Name
-      properties:
-        namespace:
+        pvcnamespace:
           type: string
           default: quarkusdroneshop-reward-shared-workspace-pvc
-
-    - title: Storage Size
-      properties:
-        namespace:
+        pvcsize:
           type: string
           required: true
           default: 5Gi
