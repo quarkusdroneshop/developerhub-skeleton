@@ -60,14 +60,12 @@ spec:
         namespace:
           type: string
           description: The namespace to create the PVC in
-          required: true
           default: quarkusdroneshop-cicd
         pvcnamespace:
           type: string
           default: quarkusdroneshop-reward-shared-workspace-pvc
         pvcsize:
           type: string
-          required: true
           default: 5Gi
 
   steps:
