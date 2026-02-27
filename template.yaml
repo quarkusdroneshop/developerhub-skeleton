@@ -56,23 +56,25 @@ spec:
           default: 600
 
     - title: PVC情報
-    - title: Namespace
-      description: The namespace to create the PVC in
-      type: string
-      required: true
-      default: quarkusdroneshop-cicd
+      properties:
+        namespace:
+          type: string
+          description: The namespace to create the PVC in
+          required: true
+          default: quarkusdroneshop-cicd
 
     - title: PVC Name
-      description: Name of the PVC
-      type: string
-      required: true
-      default: quarkusdroneshop-reward-shared-workspace-pvc
+      properties:
+        namespace:
+          type: string
+          default: quarkusdroneshop-reward-shared-workspace-pvc
 
     - title: Storage Size
-      description: Requested storage size
-      type: string
-      required: true
-      default: 5Gi
+      properties:
+        namespace:
+          type: string
+          required: true
+          default: 5Gi
 
   steps:
     - id: fetch
