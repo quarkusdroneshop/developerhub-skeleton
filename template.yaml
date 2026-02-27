@@ -118,7 +118,7 @@ spec:
 
     - id: create-pipelinerun
       name: Tekton PipelineRun YAML 作成
-      action: roadiehq:utils:fs:write
+      action: roadiehq:utils:write   # ← roadiehq:utils:fs:write ではない
       input:
         path: pipelinerun-${{ parameters.app_name }}.yaml
         content: |
