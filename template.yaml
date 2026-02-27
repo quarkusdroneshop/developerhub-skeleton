@@ -77,23 +77,14 @@ spec:
         defaultBranch: main
         repoVisibility: public
 
-    - id: create-pvc
-      name: Create Workspace PVC
-      action: kubernetes:apply
+    - id: pvc
+      name: Create PVC
+      action: custom:create-pvc
       input:
-        namespace: ${{ parameters.namespace }}
-        manifest: |
-          apiVersion: v1
-          kind: PersistentVolumeClaim
-          metadata:
-            name: ${{ parameters.app_name }}-shared-workspace-pvc
-          spec:
-            accessModes:
-              - ReadWriteOnce
-            resources:
-              requests:
-                storage: 5Gi
-                
+        namespace: quarkusdroneshop-cicd
+        name: quarkusdroneshop-reward-shared-workspace-pvc
+        storage: 5Gi
+
     # 🔥 ③ ここで Tekton を直接起動
     - id: run-tekton
       name: Run Tekton Pipeline
@@ -114,8 +105,16 @@ spec:
             workspaces:
               - name: shared-workspace
                 persistentVolumeClaim:
-                  persistentVolumeClaim:
-                    claimName: ${{ parameters.app_name }}-shared-workspace-pvc
+                  claimName: quarkusdroneshop-reward-shared-workspace-pvc
+
+    - id: push-to-argocd-repo
+      name: GitHub に push (ArgoCD 管理リポジトリ)
+      action: publish:github
+      input:
+        repoUrl: github.com?owner=quarkusdroneshop&repo=quarkusdroneshop-reward
+        files:
+          - pipelinerun-${{ parameters.app_name }}.yaml
+        commitMessage: "Add PipelineRun for ${{ parameters.app_name }}"
 
     - id: deploy-argo
       name: ArgoCD でデプロイ
