@@ -55,6 +55,25 @@ spec:
           description: Timeout in seconds to wait for pipeline completion
           default: 600
 
+    - title: PVC情報
+    - title: Namespace
+      description: The namespace to create the PVC in
+      type: string
+      required: true
+      default: quarkusdroneshop-cicd
+
+    - title: PVC Name
+      description: Name of the PVC
+      type: string
+      required: true
+      default: quarkusdroneshop-reward-shared-workspace-pvc
+
+    - title: Storage Size
+      description: Requested storage size
+      type: string
+      required: true
+      default: 5Gi
+
   steps:
     - id: fetch
       name: テンプレート取得
@@ -77,13 +96,31 @@ spec:
         defaultBranch: main
         repoVisibility: public
 
-    # - id: pvc
-    #   name: Create PVC
+    # - id: create_pvc_yaml
+    #   name: Create PVC YAML
+    #   action: roadiehq:utils:fs:write
+    #   input:
+    #     path: ./output/pvc.yaml
+    #     content: |
+    #       apiVersion: v1
+    #       kind: PersistentVolumeClaim
+    #       metadata:
+    #         name: {{ parameters["PVC Name"] }}
+    #         namespace: {{ parameters.Namespace }}
+    #       spec:
+    #         accessModes:
+    #           - ReadWriteOnce
+    #         resources:
+    #           requests:
+    #             storage: {{ parameters["Storage Size"] }}
+
+    # - id: run_k8s
+    #   name: Apply PVC to cluster
     #   action: custom:create-pvc
     #   input:
-    #     namespace: quarkusdroneshop-cicd
-    #     name: quarkusdroneshop-reward-shared-workspace-pvc
-    #     storage: 5Gi
+    #     namespace: {{ parameters.Namespace }}
+    #     pvcName: {{ parameters["PVC Name"] }}
+    #     storage: {{ parameters["Storage Size"] }}
 
     - id: create-pipelinerun
       name: Tekton PipelineRun YAML 作成
