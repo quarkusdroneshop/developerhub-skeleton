@@ -55,15 +55,8 @@ spec:
           ui:options:
             allowedKinds: [User]
 
-  ##########################################################
-  # Steps
-  ##########################################################
-
   steps:
 
-    ##########################################################
-    # 1. ソース生成
-    ##########################################################
     - id: fetch
       name: テンプレート取得
       action: fetch:template
@@ -74,9 +67,6 @@ spec:
           image_tag: ${{ parameters.image_tag }}
           owner: ${{ parameters.owner }}
 
-    ##########################################################
-    # 2. GitHubへPush
-    ##########################################################
     - id: publish
       name: GitHubへPush
       action: publish:github
@@ -85,9 +75,6 @@ spec:
         defaultBranch: main
         repoVisibility: public
 
-    ##########################################################
-    # 1. ArgoCD Application 作成
-    ##########################################################
     - id: deploy-argo
       name: ArgoCD Application 作成
       action: argocd:create-resources
@@ -98,9 +85,6 @@ spec:
         repoUrl: ${{ steps['publish'].output.remoteUrl }}
         path: .
 
-    ##########################################################
-    # 2. ArgoCD Sync 完了待ち
-    ##########################################################
     - id: wait-pipeline
       name: Pipeline 作成待ち
       action: kubernetes:wait
@@ -111,9 +95,6 @@ spec:
         namespace: ${{ parameters.tektonNamespace }}
         timeout: 600
 
-    ##########################################################
-    # 3. Tekton PipelineRun 実行
-    ##########################################################
     - id: run-tekton
       name: Tekton PipelineRun 実行
       action: kubernetes:apply
@@ -132,9 +113,6 @@ spec:
                 persistentVolumeClaim:
                   claimName: quarkusdroneshop-reward-shared-workspace-pvc
 
-    ##########################################################
-    # 4. Tekton 完了待ち
-    ##########################################################
     - id: wait-tekton
       name: Tekton 完了待ち
       action: kubernetes:wait
@@ -145,19 +123,12 @@ spec:
         namespace: quarkusdroneshop-cicd
         timeout: 900
 
-    ##########################################################
-    # 5. Backstage登録
-    ##########################################################
     - id: register
       name: Backstageに登録
       action: catalog:register
       input:
         repoContentsUrl: https://github.com/${{ parameters.git_owner_name }}/${{ parameters.git_repo_name }}/blob/main
         catalogInfoPath: /catalog-info.yaml
-
-  ##########################################################
-  # Output
-  ##########################################################
 
   output:
     links:
