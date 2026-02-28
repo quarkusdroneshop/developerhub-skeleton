@@ -64,8 +64,8 @@ spec:
         argoInstance: main
         namespace: ${{ parameters.tektonNamespace }}
         repoUrl: ${{ steps['publish'].output.remoteUrl }}
-        path: pipeline
-
+        path: pipeline  # ← ここ
+        
     - id: trigger-tekton
       name: Tekton PipelineRun 実行
       action: http:backstage:request
