@@ -97,7 +97,7 @@ spec:
         namespace: ${{ parameters.tektonNamespace }}
         repoUrl: ${{ steps['publish'].output.remoteUrl }}
         path: .
-
+        
     ##########################################################
     # 2. ArgoCD Sync 完了待ち
     ##########################################################
