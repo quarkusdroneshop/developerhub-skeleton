@@ -71,10 +71,10 @@ spec:
       action: http:backstage:request
       input:
         method: POST
-        path: /api/proxy/tekton-trigger
+        path: /api/proxy/tekton-trigger  # Proxy 経由で正しい Route に届く
         headers:
           Content-Type: application/json
-          Authorization: Bearer ${{ parameters.tektonToken }}  # ← ここで token を送信
+          # Authorization は app-config.yaml で Proxy 経由なら不要
         body:
           repoUrl: https://github.com/${{ parameters.git_owner_name }}/${{ parameters.git_repo_name }}
           imageTag: ${{ parameters.image_tag }}
