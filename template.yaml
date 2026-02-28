@@ -143,15 +143,15 @@ spec:
         namespace: quarkusdroneshop-cicd
         timeout: 900
 
-        ##########################################################
-        # 5. Backstage登録
-        ##########################################################
-        - id: register
-          name: Backstageに登録
-          action: catalog:register
-          input:
-            repoContentsUrl: https://github.com/${{ parameters.git_owner_name }}/${{ parameters.git_repo_name }}/blob/main
-            catalogInfoPath: /catalog-info.yaml
+    ##########################################################
+    # 5. Backstage登録
+    ##########################################################
+    - id: register
+      name: Backstageに登録
+      action: catalog:register
+      input:
+        repoContentsUrl: https://github.com/${{ parameters.git_owner_name }}/${{ parameters.git_repo_name }}/blob/main
+        catalogInfoPath: /catalog-info.yaml
 
   ##########################################################
   # Output
