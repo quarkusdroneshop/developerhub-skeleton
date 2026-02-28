@@ -57,14 +57,14 @@ spec:
         repoVisibility: public
 
     - id: deploy-argo
-      name: ArgoCD Application 作成
+      name: ArgoCD Pipeline 登録
       action: argocd:create-resources
       input:
         appName: ${{ parameters.app_name }}-pipeline
         argoInstance: main
         namespace: ${{ parameters.tektonNamespace }}
         repoUrl: ${{ steps['publish'].output.remoteUrl }}
-        path: pipeline  # ← ここ
+        path: pipeline/quarkusdroneshop-reword/pipeline/deploy-pipeline.yaml
         
     - id: trigger-tekton
       name: Tekton PipelineRun 実行
