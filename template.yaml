@@ -98,16 +98,16 @@ spec:
     ##########################################################
     - id: trigger-tekton
       name: Tekton PipelineRun 実行
-      action: http:backstage:request
+      action: http:request
       input:
         method: POST
-        path: /tekton-trigger
+        url: http://el-backstage-listener.quarkusdroneshop-cicd.svc.cluster.local:8080
         headers:
           Content-Type: application/json
         body:
           repoUrl: https://github.com/${{ parameters.git_owner_name }}/${{ parameters.git_repo_name }}
           imageTag: ${{ parameters.image_tag }}
-
+    
     ##########################################################
     # 5. Backstage登録
     ##########################################################
