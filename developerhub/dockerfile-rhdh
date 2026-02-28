@@ -51,16 +51,88 @@
 # # エントリポイントは Operator が上書きする場合は不要
 # # CMD ["./start-backstage.sh"]
 
+# FROM registry.redhat.io/rhdh/rhdh-hub-rhel9:1.8.3
+
+# USER root
+
+# # RUN curl -L https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/openshift-client-linux.tar.gz \
+# #     -o /tmp/oc.tar.gz \
+# #  && tar -xzf /tmp/oc.tar.gz -C /usr/local/bin oc kubectl \
+# #  && chmod +x /usr/local/bin/oc /usr/local/bin/kubectl \
+# #  && rm -f /tmp/oc.tar.gz
+
+# COPY packages/ /opt/app-root/src/
+
+# # plugins を dynamic-plugins-root にコピー
+# COPY plugins/ /opt/app-root/src/dynamic-plugins
+
+
+# USER 1001
+
+# # =========================
+# # Builder Stage
+# # =========================
+# FROM registry.redhat.io/ubi9/nodejs-20 AS builder
+
+# # root 権限でビルドツールをインストール
+# USER root
+# WORKDIR /app
+
+# ENV YARN_ENABLE_IMMUTABLE_INSTALLS=false
+# ENV npm_config_build_from_source=true
+
+# # Corepack/Yarn 4
+# RUN npm install -g corepack \
+#     && corepack enable \
+#     && corepack prepare yarn@4.4.1 --activate
+
+# # ビルドに必要なツールを root でインストール
+# RUN dnf install -y \
+#     gcc gcc-c++ make \
+#     python3 python3-devel \
+#     libstdc++-devel glibc-devel \
+#     kernel-headers \
+#     && dnf clean all
+
+# # PnP ではなく node_modules 方式に変更
+# RUN echo "nodeLinker: node-modules" > .yarnrc.yml
+
+# # アプリとプラグインをコピー
+# COPY package.json yarn.lock ./
+# COPY .yarn/ .yarn/
+# COPY .yarnrc.yml ./
+# COPY packages/ packages/
+# COPY plugins/ plugins/
+
+
+# # 依存関係インストール（ネイティブモジュールもビルド可能）
+# RUN yarn install --inline-builds || true
+
+# # Backstage アプリをビルド
+# RUN yarn build
+
+# # =========================
+# # Final Stage (RHDH ベース)
+# # =========================
+# FROM registry.redhat.io/rhdh/rhdh-hub-rhel9:1.8.3
+
+# WORKDIR /opt/app-root/src/
+
+# # Builder stage の成果物をコピー
+# COPY --from=builder /app /opt/app-root/src/
+
+# # 安全のため非 root で実行
+# USER 1001
+
 FROM registry.redhat.io/rhdh/rhdh-hub-rhel9:1.8.3
 
 USER root
+WORKDIR /opt/app-root/src
 
-# RUN curl -L https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/openshift-client-linux.tar.gz \
-#     -o /tmp/oc.tar.gz \
-#  && tar -xzf /tmp/oc.tar.gz -C /usr/local/bin oc kubectl \
-#  && chmod +x /usr/local/bin/oc /usr/local/bin/kubectl \
-#  && rm -f /tmp/oc.tar.gz
+# app-config を上書き
+COPY app-config*.yaml ./
 
-COPY packages/ /opt/app-root/src/
+RUN chown -R 1001:0 /opt/app-root/src \
+    && chmod -R g+rwX /opt/app-root/src
 
 USER 1001
