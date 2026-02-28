@@ -101,7 +101,7 @@ spec:
       action: http:backstage:request
       input:
         method: POST
-        path: https://el-${{ parameters.app_name }}.${{ parameters.clusterDomain }}
+        path: /tekton-trigger
         headers:
           Content-Type: application/json
         body:
