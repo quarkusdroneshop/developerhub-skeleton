@@ -8,39 +8,26 @@ spec:
   owner: user:default/nmushino
   type: service
 
-  ##########################################################
-  # Parameters
-  ##########################################################
-
   parameters:
     - title: アプリケーション情報
-      required:
-        - app_name
-        - git_owner_name
-        - git_repo_name
+      required: [app_name, git_owner_name, git_repo_name]
       properties:
-        app_name:
-          type: string
-        git_owner_name:
-          type: string
-        git_repo_name:
-          type: string
-        image_tag:
-          type: string
-          default: latest
+        app_name: { type: string }
+        git_owner_name: { type: string }
+        git_repo_name: { type: string }
+        image_tag: { type: string, default: latest }
 
     - title: Tekton情報
-      required:
-        - tektonNamespace
-        - clusterDomain
+      required: [tektonNamespace, clusterDomain, tektonToken]
       properties:
-        tektonNamespace:
-          type: string
-          default: quarkusdroneshop-cicd
+        tektonNamespace: { type: string, default: quarkusdroneshop-cicd }
         clusterDomain:
           type: string
           description: apps.<cluster-domain>
           default: apps.example.com
+        tektonToken:
+          type: string
+          description: "Tekton Listener 認証トークン"
 
     - title: 所有者情報
       required: [owner]
@@ -51,15 +38,7 @@ spec:
           ui:options:
             allowedKinds: [User]
 
-  ##########################################################
-  # Steps
-  ##########################################################
-
   steps:
-
-    ##########################################################
-    # 1. ソース生成
-    ##########################################################
     - id: fetch
       name: テンプレート取得
       action: fetch:template
@@ -69,9 +48,6 @@ spec:
           app_name: ${{ parameters.app_name }}
           owner: ${{ parameters.owner }}
 
-    ##########################################################
-    # 2. GitHubへPush
-    ##########################################################
     - id: publish
       name: GitHubへPush
       action: publish:github
@@ -80,9 +56,6 @@ spec:
         defaultBranch: main
         repoVisibility: public
 
-    ##########################################################
-    # 3. ArgoCD Application 作成
-    ##########################################################
     - id: deploy-argo
       name: ArgoCD Application 作成
       action: argocd:create-resources
@@ -91,11 +64,8 @@ spec:
         argoInstance: main
         namespace: ${{ parameters.tektonNamespace }}
         repoUrl: ${{ steps['publish'].output.remoteUrl }}
-        path: pipline
+        path: pipeline
 
-    ##########################################################
-    # 4. Tekton Trigger 実行
-    ##########################################################
     - id: trigger-tekton
       name: Tekton PipelineRun 実行
       action: http:backstage:request
@@ -104,23 +74,10 @@ spec:
         path: /api/proxy/tekton-trigger
         headers:
           Content-Type: application/json
+          Authorization: Bearer ${{ parameters.tektonToken }}  # ← ここで token を送信
         body:
           repoUrl: https://github.com/${{ parameters.git_owner_name }}/${{ parameters.git_repo_name }}
           imageTag: ${{ parameters.image_tag }}
-    
-    ##########################################################
-    # 5. Backstage登録
-    ##########################################################
-    - id: register
-      name: Backstageに登録
-      action: catalog:register
-      input:
-        repoContentsUrl: https://github.com/${{ parameters.git_owner_name }}/${{ parameters.git_repo_name }}/blob/main
-        catalogInfoPath: /catalog-info.yaml
-
-  ##########################################################
-  # Output
-  ##########################################################
 
   output:
     links:
