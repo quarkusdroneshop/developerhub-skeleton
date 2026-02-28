@@ -118,7 +118,7 @@ spec:
 
     - id: create-pipelinerun
       name: Tekton PipelineRun YAML 作成
-      action: roadiehq:utils:fs:write   # ← roadiehq:utils:fs:write ではない
+      action: roadiehq:utils:fs:write
       input:
         path: pipelinerun-${{ parameters.app_name }}.yaml
         content: |
@@ -138,15 +138,6 @@ spec:
               - name: IMAGE_TAG
                 value: ${{ parameters.image_tag }}
 
-    - id: push-to-argocd-repo
-      name: GitHub に push (ArgoCD 管理リポジトリ)
-      action: publish:github
-      input:
-        repoUrl: github.com?owner=quarkusdroneshop&repo=quarkusdroneshop-reward
-        files:
-          - pipelinerun-${{ parameters.app_name }}.yaml
-        commitMessage: "Add PipelineRun for ${{ parameters.app_name }}"
-
     - id: deploy-argo
       name: ArgoCD でデプロイ
       action: argocd:create-resources
@@ -155,7 +146,7 @@ spec:
         argoInstance: main
         namespace: quarkusdroneshop-cicd
         repoUrl: https://github.com/quarkusdroneshop/quarkusdroneshop-reward.git
-        path: pipeline/quarkusdroneshop-reward
+        path: ${{ parameters.pipelineName }}
 
     - id: register
       name: Backstageに登録
