@@ -92,11 +92,11 @@ spec:
       name: ArgoCD Application 作成
       action: argocd:create-resources
       input:
-        appName: quarkusdroneshop-reward-pipeline
+        appName: ${{ parameters.app_name }}-pipeline
         argoInstance: main
-        namespace: quarkusdroneshop-cicd
-        repoUrl: https://github.com/quarkusdroneshop/quarkusdroneshop-reward.git
-        path: ${{ parameters.pipelineName }}
+        namespace: ${{ parameters.tektonNamespace }}
+        repoUrl: ${{ steps['publish'].output.remoteUrl }}
+        path: .
 
     ##########################################################
     # 2. ArgoCD Sync 完了待ち
