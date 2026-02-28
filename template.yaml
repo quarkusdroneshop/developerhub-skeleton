@@ -98,10 +98,10 @@ spec:
     ##########################################################
     - id: trigger-tekton
       name: Tekton PipelineRun 実行
-      action: http:request
+      action: http:backstage:request
       input:
         method: POST
-        url: http://el-backstage-listener.quarkusdroneshop-cicd.svc.cluster.local:8080
+        path: /api/proxy/tekton-trigger
         headers:
           Content-Type: application/json
         body:
