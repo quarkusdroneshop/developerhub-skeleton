@@ -97,16 +97,18 @@ spec:
         namespace: ${{ parameters.tektonNamespace }}
         repoUrl: ${{ steps['publish'].output.remoteUrl }}
         path: .
-        
+
     ##########################################################
     # 2. ArgoCD Sync 完了待ち
     ##########################################################
-    - id: wait-argo
-      name: ArgoCD Sync 完了待ち
-      action: argocd:wait
+    - id: wait-pipeline
+      name: Pipeline 作成待ち
+      action: kubernetes:wait
       input:
-        appName: quarkusdroneshop-reward-pipeline
-        argoInstance: main
+        apiVersion: tekton.dev/v1
+        kind: Pipeline
+        name: ${{ parameters.pipelineName }}
+        namespace: ${{ parameters.tektonNamespace }}
         timeout: 600
 
     ##########################################################
