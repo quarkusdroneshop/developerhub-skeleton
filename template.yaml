@@ -1,9 +1,9 @@
 apiVersion: scaffolder.backstage.io/v1beta3
 kind: Template
 metadata:
-  name: quarkus-tekton-gitops-template
-  title: Quarkus S2I + Tekton GitOps Template
-  description: GitHub push → Tekton PipelineRun 実行 → 完了待ち → Backstage登録
+  name: tekton-gitops-trigger-template
+  title: Tekton GitOps + Trigger Template
+  description: ArgoCDでPipeline管理し、BackstageからTriggerでPipelineRun実行
 spec:
   owner: user:default/nmushino
   type: service
@@ -29,22 +29,18 @@ spec:
           type: string
           default: latest
 
-    - title: Tekton 実行情報
+    - title: Tekton情報
       required:
         - tektonNamespace
-        - pipelineName
+        - clusterDomain
       properties:
         tektonNamespace:
           type: string
           default: quarkusdroneshop-cicd
-        pipelineName:
+        clusterDomain:
           type: string
-        pvcName:
-          type: string
-          default: quarkusdroneshop-reward-shared-workspace-pvc
-        timeoutSeconds:
-          type: number
-          default: 900
+          description: apps.<cluster-domain>
+          default: apps.example.com
 
     - title: 所有者情報
       required: [owner]
@@ -55,8 +51,15 @@ spec:
           ui:options:
             allowedKinds: [User]
 
+  ##########################################################
+  # Steps
+  ##########################################################
+
   steps:
 
+    ##########################################################
+    # 1. ソース生成
+    ##########################################################
     - id: fetch
       name: テンプレート取得
       action: fetch:template
@@ -64,9 +67,11 @@ spec:
         url: ./skeleton
         values:
           app_name: ${{ parameters.app_name }}
-          image_tag: ${{ parameters.image_tag }}
           owner: ${{ parameters.owner }}
 
+    ##########################################################
+    # 2. GitHubへPush
+    ##########################################################
     - id: publish
       name: GitHubへPush
       action: publish:github
@@ -75,6 +80,9 @@ spec:
         defaultBranch: main
         repoVisibility: public
 
+    ##########################################################
+    # 3. ArgoCD Application 作成
+    ##########################################################
     - id: deploy-argo
       name: ArgoCD Application 作成
       action: argocd:create-resources
@@ -83,46 +91,26 @@ spec:
         argoInstance: main
         namespace: ${{ parameters.tektonNamespace }}
         repoUrl: ${{ steps['publish'].output.remoteUrl }}
-        path: .
+        path: tekton
 
-    - id: wait-pipeline
-      name: Pipeline 作成待ち
-      action: kubernetes:wait
-      input:
-        apiVersion: tekton.dev/v1
-        kind: Pipeline
-        name: ${{ parameters.pipelineName }}
-        namespace: ${{ parameters.tektonNamespace }}
-        timeout: 600
-
-    - id: run-tekton
+    ##########################################################
+    # 4. Tekton Trigger 実行
+    ##########################################################
+    - id: trigger-tekton
       name: Tekton PipelineRun 実行
-      action: kubernetes:apply
+      action: http:backstage:request
       input:
-        manifest: |
-          apiVersion: tekton.dev/v1
-          kind: PipelineRun
-          metadata:
-            name: build-${{ parameters.app_name }}
-            namespace: quarkusdroneshop-cicd
-          spec:
-            pipelineRef:
-              name: ${{ parameters.pipelineName }}
-            workspaces:
-              - name: shared-workspace
-                persistentVolumeClaim:
-                  claimName: quarkusdroneshop-reward-shared-workspace-pvc
+        method: POST
+        path: https://el-${{ parameters.app_name }}.${{ parameters.clusterDomain }}
+        headers:
+          Content-Type: application/json
+        body:
+          repoUrl: https://github.com/${{ parameters.git_owner_name }}/${{ parameters.git_repo_name }}
+          imageTag: ${{ parameters.image_tag }}
 
-    - id: wait-tekton
-      name: Tekton 完了待ち
-      action: kubernetes:wait
-      input:
-        apiVersion: tekton.dev/v1
-        kind: PipelineRun
-        name: build-${{ parameters.app_name }}
-        namespace: quarkusdroneshop-cicd
-        timeout: 900
-
+    ##########################################################
+    # 5. Backstage登録
+    ##########################################################
     - id: register
       name: Backstageに登録
       action: catalog:register
@@ -130,14 +118,18 @@ spec:
         repoContentsUrl: https://github.com/${{ parameters.git_owner_name }}/${{ parameters.git_repo_name }}/blob/main
         catalogInfoPath: /catalog-info.yaml
 
+  ##########################################################
+  # Output
+  ##########################################################
+
   output:
     links:
-      - title: GitHub リポジトリ
+      - title: GitHub Repository
         url: ${{ steps['publish'].output.remoteUrl }}
 
-      - title: OpenShift PipelineRun
-        url: https://console-openshift-console.apps.<your-cluster-domain>/k8s/ns/${{ parameters.tektonNamespace }}/tekton.dev~v1~PipelineRun/build-${{ parameters.app_name }}
+      - title: OpenShift Pipelines
+        url: https://console-openshift-console.${{ parameters.clusterDomain }}/k8s/ns/${{ parameters.tektonNamespace }}/tekton.dev~v1~PipelineRun
 
-      - title: Backstage エンティティ
+      - title: Backstage Entity
         icon: catalog
         entityRef: ${{ steps['register'].output.entityRef }}
