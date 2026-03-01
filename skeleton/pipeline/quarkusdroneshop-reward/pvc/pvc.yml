@@ -4,6 +4,7 @@ metadata:
   name: quarkusdroneshop-reward-shared-workspace-pvc
   namespace: quarkusdroneshop-cicd
 spec:
+  storageClassName: gp3-csi   # ← 追加
   accessModes:
     - ReadWriteOnce
   resources:
