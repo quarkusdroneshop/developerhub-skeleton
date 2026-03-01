@@ -66,6 +66,17 @@ spec:
         repoUrl: ${{ steps['publish'].output.remoteUrl }}
         path: pipeline/quarkusdroneshop-reward
         
+    - id: trigger-tekton
+      name: Tekton PipelineRun 実行
+      action: http:backstage:request
+      input:
+        method: POST
+        url: https://reward-listener-quarkusdroneshop-cicd.apps.${{ parameters.clusterDomain }}
+        headers:
+          Content-Type: application/json
+        body:
+          imageTag: ${{ parameters.image_tag }}
+
     # - id: trigger-tekton
     #   name: Tekton PipelineRun 実行
     #   action: http:backstage:request
