@@ -62,9 +62,11 @@ spec:
       input:
         appName: ${{ parameters.app_name }}-pipeline
         argoInstance: main
-        namespace: ${{ parameters.tektonNamespace }}
+        namespace: openshift-gitops   # ← ここを固定する
         repoUrl: ${{ steps['publish'].output.remoteUrl }}
         path: pipeline/quarkusdroneshop-reward
+        destinationServer: https://kubernetes.default.svc
+        destinationNamespace: ${{ parameters.tektonNamespace }}
         
     - id: trigger-tekton
       name: Tekton PipelineRun 実行
