@@ -62,7 +62,7 @@ spec:
       input:
         appName: ${{ parameters.app_name }}-pipeline
         argoInstance: main
-        namespace: openshift-gitops   # ← ここを固定する
+        namespace: quarkusdroneshop-cicd
         repoUrl: ${{ steps['publish'].output.remoteUrl }}
         path: pipeline/quarkusdroneshop-reward
         
