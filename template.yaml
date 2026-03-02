@@ -66,15 +66,12 @@ spec:
         repoUrl: ${{ steps['publish'].output.remoteUrl }}
         path: pipeline/quarkusdroneshop-reward
         
-    - id: trigger-pipelinerun
-      name: Tekton PipelineRun Trigger
-      action: http:backstage:request
+    - id: apply-resource
+      name: Kubernetes Apply
+      action: kubernetes:apply
       input:
-        method: 'POST'
-        path: '/proxy/tekton.dev/v1/namespaces/quarkusdroneshop-cicd/pipelineruns'
-        headers:
-          Content-Type: 'application/yaml'
-        body: |
+        namespace: quarkusdroneshop-cicd
+        manifest: |
           apiVersion: tekton.dev/v1
           kind: PipelineRun
           metadata:
