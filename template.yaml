@@ -66,17 +66,26 @@ spec:
         repoUrl: ${{ steps['publish'].output.remoteUrl }}
         path: pipeline/quarkusdroneshop-reward
         
-    - id: run-pipeline
-      name: PipelineRun 作成 via Tekton Trigger
-      action: http:request
+    - id: trigger-pipelinerun
+      name: Tekton PipelineRun Trigger
+      action: http:backstage:request
       input:
-        url: https://tekton.example.com/el/build-pipeline-listener
-        method: POST
+        method: 'POST'
+        path: '/proxy/tekton.dev/v1/namespaces/quarkusdroneshop-cicd/pipelineruns'
         headers:
-          Content-Type: application/json
-        body:
-          pipelineName: build-and-push-quarkusdroneshop-reward
-          workspacePVC: quarkusdroneshop-reward-shared-workspace-pvc
+          Content-Type: 'application/yaml'
+        body: |
+          apiVersion: tekton.dev/v1
+          kind: PipelineRun
+          metadata:
+            generateName: reward-run-
+          spec:
+            pipelineRef:
+              name: build-and-push-quarkusdroneshop-reward
+            workspaces:
+              - name: shared-workspace
+                persistentVolumeClaim:
+                  claimName: quarkusdroneshop-reward-shared-workspace-pvc
 
     - id: register
       action: catalog:register
