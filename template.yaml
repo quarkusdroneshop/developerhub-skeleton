@@ -66,9 +66,9 @@ spec:
         repoUrl: ${{ steps['publish'].output.remoteUrl }}
         path: pipeline/quarkusdroneshop-reward
         
-    - id: apply-resource
-      name: Kubernetes Apply
-      action: kubernetes:apply
+    - id: create-pipelinerun
+      name: Create PipelineRun
+      action: kubernetes:create-pipelinerun
       input:
         namespace: quarkusdroneshop-cicd
         manifest: |
