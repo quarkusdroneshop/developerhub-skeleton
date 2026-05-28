@@ -6,8 +6,9 @@
     "plugins/*/src",
     "plugins/*/config.d.ts",
     "plugins/*/dev",
-    "plugins/*/migrations"
-  ],
+    "plugins/*/migrations",
+    "dynamic-plugins/*/src"
+, "plugins/kubernetes-scaffolder-module/src/scaffolder"  ],
   "exclude": ["node_modules"],
   "compilerOptions": {
     "outDir": "dist-types",

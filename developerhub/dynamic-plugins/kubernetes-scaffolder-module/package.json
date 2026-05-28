@@ -1,0 +1,29 @@
+{
+  "name": "kubernetes-scaffolder-module",
+  "version": "1.0.0",
+  "private": true,
+  "main": "dist/index.cjs.js",
+  "scripts": {
+    "build": "tsc --outDir dist",
+    "build:dynamic": "tsc --outDir dist-dynamic"
+  },
+  "backstage": {
+    "role": "backend-plugin-module",
+    "pluginId": "scaffolder"
+  },
+  "dependencies": {
+    "@backstage/backend-common": "^0.25.0",
+    "@backstage/backend-plugin-api": "^0.5.0",
+    "@backstage/backend-tasks": "^0.6.1",
+    "@backstage/plugin-scaffolder-node": "^0.5.0",
+    "@kubernetes/client-node": "^1.4.0",
+    "js-yaml": "^4.1.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@backstage/cli": "*",
+    "jest": "30.2.0",
+    "typescript": "^5.9.3",
+    "webpack": "~5.104.0"
+  }
+}

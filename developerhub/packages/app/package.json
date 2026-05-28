@@ -51,12 +51,16 @@
   "devDependencies": {
     "@backstage/test-utils": "^1.7.15",
     "@playwright/test": "^1.32.3",
-    "@testing-library/dom": "^9.0.0",
-    "@testing-library/jest-dom": "^6.0.0",
-    "@testing-library/react": "^14.0.0",
+    "@testing-library/dom": "^10.0.0",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.0.0",
+    "@types/jest": "^30.0.0",
+    "@types/react": "^19.2.14",
     "@types/react-dom": "*",
-    "cross-env": "^7.0.0"
+    "cross-env": "^7.0.0",
+    "jest": "^30.2.0",
+    "webpack": "~5.104.0"
   },
   "browserslist": {
     "production": [

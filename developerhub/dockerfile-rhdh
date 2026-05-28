@@ -1,138 +1,58 @@
-# # ────────────────
-# # ベースイメージ
-# # ────────────────
-# FROM registry.redhat.io/rhdh/rhdh-hub-rhel9:1.8.3
-
-# # ────────────────
-# # root に切り替えて Node.js + Yarn を追加
-# # ────────────────
-# USER root
-
-# # 既存の nodejs モジュールをリセットして Node.js 20 を有効化
-# RUN microdnf module reset nodejs -y && \
-#     microdnf module enable nodejs:20 -y && \
-#     microdnf install -y nodejs npm && \
-#     npm install --global yarn && \
-#     microdnf clean all
-
-# RUN yarn install
-# RUN yarn add @backstage-community/plugin-scaffolder-backend-module-tekton
-# RUN yarn add @roadiehq/scaffolder-backend-module-http-request
-# RUN yarn backstage-cli package build
-
-# # 作業ディレクトリ
-# WORKDIR /opt/app-root/src
-
-# # Backend の package.json と yarn.lock をコピー
-# COPY packages/backend/package.json packages/backend/package.json
-# COPY packages/backend/yarn.lock packages/backend/yarn.lock
-# COPY packages/backend/.yarn packages/backend/.yarn
-# COPY packages/backend/node_modules packages/backend/node_modules
-# COPY packages/backend/dynamic-plugins ./dynamic-plugins
-# COPY packages/backend/src ./src
-
-# # # 依存ライブラリのインストール
-# # RUN yarn install --frozen-lockfile
-
-# # 必要な Backstage プラグインを追加
-# # RUN yarn add @roadiehq/scaffolder-backend-module-http-request
-
-# # Tekton プラグインは GitHub から直接インストール（必要に応じて有効化）
-# # RUN yarn add github:backstage-community/plugin-scaffolder-backend-module-tekton
-
-# #RUN yarn add @backstage-community/plugin-scaffolder-backend-module-tekton
-
-# # 環境変数
-# ENV NODE_ENV=production
-
-# # 権限を通常ユーザーに戻す（RHDH Hub 推奨）
-# USER 1001
-
-# # エントリポイントは Operator が上書きする場合は不要
-# # CMD ["./start-backstage.sh"]
-
-# FROM registry.redhat.io/rhdh/rhdh-hub-rhel9:1.8.3
-
-# USER root
-
-# # RUN curl -L https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/openshift-client-linux.tar.gz \
-# #     -o /tmp/oc.tar.gz \
-# #  && tar -xzf /tmp/oc.tar.gz -C /usr/local/bin oc kubectl \
-# #  && chmod +x /usr/local/bin/oc /usr/local/bin/kubectl \
-# #  && rm -f /tmp/oc.tar.gz
-
-# COPY packages/ /opt/app-root/src/
-
-# # plugins を dynamic-plugins-root にコピー
-# COPY plugins/ /opt/app-root/src/dynamic-plugins
-
-
-# USER 1001
-
-# # =========================
-# # Builder Stage
-# # =========================
-# FROM registry.redhat.io/ubi9/nodejs-20 AS builder
-
-# # root 権限でビルドツールをインストール
-# USER root
-# WORKDIR /app
-
-# ENV YARN_ENABLE_IMMUTABLE_INSTALLS=false
-# ENV npm_config_build_from_source=true
-
-# # Corepack/Yarn 4
-# RUN npm install -g corepack \
-#     && corepack enable \
-#     && corepack prepare yarn@4.4.1 --activate
-
-# # ビルドに必要なツールを root でインストール
-# RUN dnf install -y \
-#     gcc gcc-c++ make \
-#     python3 python3-devel \
-#     libstdc++-devel glibc-devel \
-#     kernel-headers \
-#     && dnf clean all
-
-# # PnP ではなく node_modules 方式に変更
-# RUN echo "nodeLinker: node-modules" > .yarnrc.yml
-
-# # アプリとプラグインをコピー
-# COPY package.json yarn.lock ./
-# COPY .yarn/ .yarn/
-# COPY .yarnrc.yml ./
-# COPY packages/ packages/
-# COPY plugins/ plugins/
-
-
-# # 依存関係インストール（ネイティブモジュールもビルド可能）
-# RUN yarn install --inline-builds || true
-
-# # Backstage アプリをビルド
-# RUN yarn build
-
-# # =========================
-# # Final Stage (RHDH ベース)
-# # =========================
-# FROM registry.redhat.io/rhdh/rhdh-hub-rhel9:1.8.3
-
-# WORKDIR /opt/app-root/src/
-
-# # Builder stage の成果物をコピー
-# COPY --from=builder /app /opt/app-root/src/
-
-# # 安全のため非 root で実行
-# USER 1001
-
-FROM registry.redhat.io/rhdh/rhdh-hub-rhel9:1.8.3
-
-USER root
+# =============================
+# Base Image
+# =============================
+FROM node:22-bullseye-slim
 WORKDIR /opt/app-root/src
 
-# app-config を上書き
-COPY app-config*.yaml ./
+ENV NODE_ENV=production
+ENV NODE_PATH=/opt/app-root/src/node_modules
 
-RUN chown -R 1001:0 /opt/app-root/src \
-    && chmod -R g+rwX /opt/app-root/src
+# 必要ツール
+RUN apt-get update && apt-get install -y jq && rm -rf /var/lib/apt/lists/*
 
-USER 1001
+# =============================
+# 依存コピー（ここで package.json がある状態にする）
+# =============================
+COPY package.json yarn.lock .yarnrc.yml ./
+COPY .yarn .yarn
+
+# =============================
+# Yarn 設定（プロジェクト内で実行可能）
+# =============================
+RUN corepack enable && corepack prepare yarn@4.13.0 --activate
+RUN yarn config set nodeLinker node-modules
+RUN yarn config set enableImmutableInstalls false
+
+# =============================
+# packages, plugins, dynamic-plugins のコピー
+# =============================
+COPY packages packages
+COPY plugins plugins
+COPY dynamic-plugins dynamic-plugins
+
+# =============================
+# ホスト側でビルド済み dist-dynamic を名前付きで node_modules にコピー
+# =============================
+RUN mkdir -p node_modules
+RUN for plugin in dynamic-plugins/*/dist-dynamic; do \
+      if [ -d "$plugin" ]; then \
+          PLUGIN_NAME=$(basename $(dirname "$plugin")); \
+          echo "Copying dynamic plugin: $PLUGIN_NAME"; \
+          mkdir -p node_modules/$PLUGIN_NAME; \
+          cp -r "$plugin"/* node_modules/$PLUGIN_NAME/; \
+      fi \
+    done
+
+# =============================
+# 全体ビルド（必要であれば）
+# =============================
+COPY . .
+
+# node_modules 再インストール（古いものを削除）
+RUN rm -rf node_modules
+RUN yarn install
+
+# =============================
+# 起動
+# =============================
+CMD ["node", "packages/backend/dist/index.cjs.js"]
