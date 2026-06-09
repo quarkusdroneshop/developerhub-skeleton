@@ -1,58 +1,44 @@
 # =============================
-# Base Image
+# Base Image (RHDH Official)
 # =============================
-FROM node:22-bullseye-slim
+FROM registry.access.redhat.com/rhdh/rhdh-hub-rhel9:1779841586
+
 WORKDIR /opt/app-root/src
 
 ENV NODE_ENV=production
 ENV NODE_PATH=/opt/app-root/src/node_modules
 
-# 必要ツール
-RUN apt-get update && apt-get install -y jq && rm -rf /var/lib/apt/lists/*
+# =============================
+# 必要ツール（必要なら）
+# =============================
+USER root
+RUN microdnf install -y jq && microdnf clean all || true
+
+USER 1001
 
 # =============================
-# 依存コピー（ここで package.json がある状態にする）
+# カスタム dynamic plugins（必要な場合のみ）
 # =============================
-COPY package.json yarn.lock .yarnrc.yml ./
-COPY .yarn .yarn
+COPY dynamic-plugins /dynamic-plugins
 
 # =============================
-# Yarn 設定（プロジェクト内で実行可能）
+# カスタム設定（必要なら）
 # =============================
-RUN corepack enable && corepack prepare yarn@4.13.0 --activate
-RUN yarn config set nodeLinker node-modules
-RUN yarn config set enableImmutableInstalls false
+COPY app-config.yaml /opt/app-root/src/app-config/
+COPY app-config.production.yaml /opt/app-root/src/app-config/
 
 # =============================
-# packages, plugins, dynamic-plugins のコピー
+# 追加ライブラリがある場合のみ（任意）
 # =============================
-COPY packages packages
-COPY plugins plugins
-COPY dynamic-plugins dynamic-plugins
+# COPY custom-node-modules /opt/app-root/src/node_modules
 
 # =============================
-# ホスト側でビルド済み dist-dynamic を名前付きで node_modules にコピー
+# RHDHは build しない（重要）
 # =============================
-RUN mkdir -p node_modules
-RUN for plugin in dynamic-plugins/*/dist-dynamic; do \
-      if [ -d "$plugin" ]; then \
-          PLUGIN_NAME=$(basename $(dirname "$plugin")); \
-          echo "Copying dynamic plugin: $PLUGIN_NAME"; \
-          mkdir -p node_modules/$PLUGIN_NAME; \
-          cp -r "$plugin"/* node_modules/$PLUGIN_NAME/; \
-      fi \
-    done
+# yarn install ❌ 不要
+# yarn build ❌ 不要
+# node packages/backend ❌ 禁止
 
 # =============================
-# 全体ビルド（必要であれば）
+# 起動はベースイメージに任せる
 # =============================
-COPY . .
-
-# node_modules 再インストール（古いものを削除）
-RUN rm -rf node_modules
-RUN yarn install
-
-# =============================
-# 起動
-# =============================
-CMD ["node", "packages/backend/dist/index.cjs.js"]

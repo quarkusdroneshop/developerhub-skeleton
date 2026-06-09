@@ -50,7 +50,7 @@ spec:
 
     - id: publish
       name: GitHubへPush
-      action: publish:git
+      action: publish:github
       input:
         repoUrl: github.com?owner=${{ parameters.git_owner_name }}&repo=${{ parameters.git_repo_name }}
         defaultBranch: main
