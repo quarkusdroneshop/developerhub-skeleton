@@ -34,12 +34,11 @@
     "rulesync:import:claude": "rulesync import --targets claudecode",
     "rulesync:import:opencode": "rulesync import --targets opencode"
   },
-  "workspaces": {
-    "packages": [
-      "packages/*",
-      "plugins/*"
-    ]
-  },
+  "workspaces": [
+    "packages/*",
+    "plugins/*",
+    "dynamic-plugins/*"
+  ],
   "devDependencies": {
     "@backstage/cli": "0.36.0",
     "@backstage/cli-defaults": "0.1.0",
@@ -72,6 +71,7 @@
     "zod@^3.25.76 || ^4.0.0": "3.25.76",
     "zod@^3.25 || ^4.0": "3.25.76",
     "infinispan": "0.13.0",
+    "isolated-vm": "6.0.2",
     "@protobufjs/inquire": "1.1.0"
   },
   "jest": {

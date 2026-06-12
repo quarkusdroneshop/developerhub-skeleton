@@ -1,31 +1,50 @@
 # ==================================================
 # 1. Build stage
 # ==================================================
-FROM registry.access.redhat.com/ubi9/nodejs-20 AS builder
+FROM node:20 AS builder
 
-WORKDIR /opt/app-root/src
-
-# ----------------------------------
-# Backstage core (npm)
-# ----------------------------------
-COPY package.json package-lock.json ./
-COPY packages ./packages
-
-RUN npm ci
-RUN npm run build
+WORKDIR /app
 
 # ----------------------------------
-# dynamic plugins (yarn)
+# Yarn / native build 安定化
 # ----------------------------------
-WORKDIR /opt/app-root/src/dynamic-plugins
+ENV npm_config_build_from_source=true \
+    YARN_ENABLE_SCRIPTS=1
 
-COPY dynamic-plugins/package.json ./
-COPY dynamic-plugins/yarn.lock ./
-COPY dynamic-plugins/wrappers ./wrappers
+# ----------------------------------
+# System deps (isolated-vm / better-sqlite3 対応)
+# ----------------------------------
+RUN apt-get update && apt-get install -y \
+    python3 \
+    make \
+    g++ \
+    gcc \
+    pkg-config \
+    git \
+    && rm -rf /var/lib/apt/lists/*
 
-RUN npm install -g yarn \
- && yarn install --immutable \
+# ----------------------------------
+# Corepack + Yarn 4
+# ----------------------------------
+RUN corepack enable \
+ && corepack prepare yarn@4.12.0 --activate
+
+# ----------------------------------
+# Project files
+# ----------------------------------
+COPY . .
+
+# ----------------------------------
+# IMPORTANT: Yarn 4 安定オプション
+# ----------------------------------
+RUN yarn config set nodeLinker node-modules
+
+# ----------------------------------
+# Install + build
+# ----------------------------------
+RUN yarn install --immutable \
  && yarn build
+
 
 # ==================================================
 # 2. Runtime stage
@@ -34,20 +53,29 @@ FROM registry.redhat.io/rhdh/rhdh-hub-rhel9:1.10.0
 
 WORKDIR /opt/app-root/src
 
-ENV NODE_ENV=production
-ENV NODE_PATH=/opt/app-root/src/node_modules
+ENV NODE_ENV=production \
+    NODE_PATH=/opt/app-root/src/node_modules
 
+# ----------------------------------
+# Runtime tools
+# ----------------------------------
 USER 0
 RUN microdnf install -y jq && microdnf clean all || true
 USER 1001
 
+# ----------------------------------
 # Backstage build output
-COPY --from=builder /opt/app-root/src/packages /opt/app-root/src/packages
+# ----------------------------------
+COPY --from=builder /app/packages /opt/app-root/src/packages
 
-# dynamic plugins output（これだけでOK）
-COPY --from=builder /opt/app-root/src/dynamic-plugins/dist ./dynamic-plugins/dist
+# ----------------------------------
+# dynamic plugins output
+# ----------------------------------
+COPY --from=builder /app/dynamic-plugins/dist /opt/app-root/src/dynamic-plugins/dist
 
+# ----------------------------------
 # config
+# ----------------------------------
 COPY app-config.yaml /opt/app-root/src/app-config/
 COPY app-config.production.yaml /opt/app-root/src/app-config/
 COPY app-config.dynamic-plugins.yaml /opt/app-root/src/app-config/
