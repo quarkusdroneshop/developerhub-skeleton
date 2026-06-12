@@ -1,0 +1,6 @@
+.git
+packages/*/node_modules
+dynamic-plugins-root/*/node_modules
+*.local.yaml
+!dynamic-plugins-root/
+!dynamic-plugins-root/**

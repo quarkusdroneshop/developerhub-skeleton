@@ -1,0 +1,9 @@
+apiVersion: backstage.io/v1alpha1
+kind: BackendDynamicPlugin
+metadata:
+  name: kubernetes-scaffolder-module
+spec:
+  pluginPackage: kubernetes-scaffolder-module
+  type: backend-plugin-module
+  platform: node
+  dynamic: true
