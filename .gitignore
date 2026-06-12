@@ -25,3 +25,6 @@ replay_pid*
 
 # Backstage dir
 backstage
+
+# modules dir
+node_modules/
