@@ -1,0 +1,53 @@
+# ==================================================
+# 1. Build stage
+# ==================================================
+FROM registry.access.redhat.com/ubi9/nodejs-20 AS builder
+
+WORKDIR /opt/app-root/src
+
+# ----------------------------------
+# Backstage core (npm)
+# ----------------------------------
+COPY package.json package-lock.json ./
+COPY packages ./packages
+
+RUN npm ci
+RUN npm run build
+
+# ----------------------------------
+# dynamic plugins (yarn)
+# ----------------------------------
+WORKDIR /opt/app-root/src/dynamic-plugins
+
+COPY dynamic-plugins/package.json ./
+COPY dynamic-plugins/yarn.lock ./
+COPY dynamic-plugins/wrappers ./wrappers
+
+RUN npm install -g yarn \
+ && yarn install --immutable \
+ && yarn build
+
+# ==================================================
+# 2. Runtime stage
+# ==================================================
+FROM registry.redhat.io/rhdh/rhdh-hub-rhel9:1.10.0
+
+WORKDIR /opt/app-root/src
+
+ENV NODE_ENV=production
+ENV NODE_PATH=/opt/app-root/src/node_modules
+
+USER 0
+RUN microdnf install -y jq && microdnf clean all || true
+USER 1001
+
+# Backstage build output
+COPY --from=builder /opt/app-root/src/packages /opt/app-root/src/packages
+
+# dynamic plugins output（これだけでOK）
+COPY --from=builder /opt/app-root/src/dynamic-plugins/dist ./dynamic-plugins/dist
+
+# config
+COPY app-config.yaml /opt/app-root/src/app-config/
+COPY app-config.production.yaml /opt/app-root/src/app-config/
+COPY app-config.dynamic-plugins.yaml /opt/app-root/src/app-config/

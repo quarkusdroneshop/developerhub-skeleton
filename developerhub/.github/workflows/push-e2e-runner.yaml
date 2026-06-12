@@ -1,0 +1,84 @@
+name: Build & Push e2e-runner Image to Quay.io
+
+on:
+  push:
+    branches:
+      - main
+      - 'release-1.*'
+    paths:
+      - '.ci/images/Dockerfile'
+      - '.yarnrc.yml'
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: Target branch to build
+        required: true
+        default: 'NONE'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  REGISTRY: quay.io
+  REGISTRY_IMAGE: rhdh-community/rhdh-e2e-runner
+
+jobs:
+  build-image:
+    name: Build & Push e2e-runner Image
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04]
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          fetch-depth: 0
+
+      - name: Prepare Environment Variables
+        env:
+          INPUT_BRANCH: ${{ inputs.branch }}
+        run: |
+          echo "PLATFORM=linux/amd64" >> $GITHUB_ENV
+
+          # create image tag from the correct branch (either from a push or a workflow_dispatch trigger)
+          if [[ "$INPUT_BRANCH" ]] && [[ "$INPUT_BRANCH" != "NONE" ]]; then
+            echo "Switch to $INPUT_BRANCH"
+            git checkout "$INPUT_BRANCH"
+            IMAGE_TAG="$INPUT_BRANCH"
+          else
+            echo "Use current branch $GITHUB_REF"
+            IMAGE_TAG=$(git rev-parse --abbrev-ref HEAD)
+          fi
+          echo "Use IMAGE_TAG = $IMAGE_TAG"
+          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
+
+      - name: Get the last commit short SHA
+        uses: ./.github/actions/get-sha
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+
+      - name: Login to Quay
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.QUAY_USERNAME }}
+          password: ${{ secrets.QUAY_TOKEN }}
+
+      - name: Build and Push Image
+        uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5
+        with:
+          context: .
+          file: .ci/images/Dockerfile
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.REGISTRY_IMAGE }}:${{ env.IMAGE_TAG }}
+            ${{ env.REGISTRY }}/${{ env.REGISTRY_IMAGE }}:${{ env.IMAGE_TAG }}-${{ env.SHORT_SHA }}
+          platforms: ${{ env.PLATFORM }}

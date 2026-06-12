@@ -1,0 +1,19 @@
+{
+  "name": ".ci",
+  "version": "1.10.0",
+  "private": true,
+  "engines": {
+    "node": "24"
+  },
+  "scripts": {
+    "shellcheck": "git ls-files -z '*.sh' | xargs -0 shellcheck --severity=warning --color=always",
+    "prettier:check": "npx prettier --check **/*.{sh,md,yaml,yml}",
+    "prettier:fix": "npx prettier --write **/*.{sh,md,yaml,yml}"
+  },
+  "devDependencies": {
+    "prettier": "3.8.1",
+    "prettier-plugin-sh": "0.18.0",
+    "shellcheck": "4.1.0"
+  },
+  "packageManager": "yarn@4.12.0"
+}
