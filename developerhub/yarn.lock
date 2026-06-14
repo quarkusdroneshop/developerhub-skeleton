@@ -7325,15 +7325,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@exodus/bytes@npm:^1.11.0, @exodus/bytes@npm:^1.6.0":
-  version: 1.15.1
-  resolution: "@exodus/bytes@npm:1.15.1"
+"@exodus/bytes@npm:1.14.0":
+  version: 1.14.0
+  resolution: "@exodus/bytes@npm:1.14.0"
   peerDependencies:
     "@noble/hashes": ^1.8.0 || ^2.0.0
   peerDependenciesMeta:
     "@noble/hashes":
       optional: true
-  checksum: 10c0/333056a6953bbf875d9f3b86c32314de29458d842e5f56f6ef8034b18c2d9660184550093d1bae5de0064043d5e23f54cc03148798d9d29cf5167ac03f2e9f8c
+  checksum: 10c0/47e4a5231dd55a3d969ac7cdf3180e2f5275a7e0ae8047826019da507856b6b71a1b3ecc5ffbffab299e487b7ec3f03a50bd08f8df93557f947d105cb751253b
   languageName: node
   linkType: hard
 

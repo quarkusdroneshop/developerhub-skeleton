@@ -73,7 +73,8 @@
     "infinispan": "0.13.0",
     "isolated-vm": "5.0.4",
     "@protobufjs/inquire": "1.1.0",
-    "knex": "2.5.1"
+    "knex": "2.5.1",
+    "@exodus/bytes": "1.14.0"
   },
   "jest": {
     "testTimeout": 20000
