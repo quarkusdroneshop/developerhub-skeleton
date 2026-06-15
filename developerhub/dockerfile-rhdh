@@ -5,16 +5,11 @@ FROM node:20.18.3 AS builder
 
 WORKDIR /app
 
-# ----------------------------------
-# Yarn / native build 安定化
-# ----------------------------------
 ENV npm_config_build_from_source=false \
     npm_config_ignore_optional=true \
-    YARN_ENABLE_SCRIPTS=1
+    YARN_ENABLE_SCRIPTS=1 \
+    NODE_OPTIONS=--max_old_space_size=8192
 
-# ----------------------------------
-# System deps
-# ----------------------------------
 RUN apt-get update && apt-get install -y \
     python3 \
     make \
@@ -25,53 +20,41 @@ RUN apt-get update && apt-get install -y \
     build-essential \
  && rm -rf /var/lib/apt/lists/*
 
-# ----------------------------------
-# Corepack + Yarn
-# ----------------------------------
 RUN corepack enable \
  && corepack prepare yarn@4.16.0 --activate
 
 # ----------------------------------
-# 依存定義のみ先にコピー
+# Root metadata
 # ----------------------------------
 COPY package.json yarn.lock .yarnrc.yml ./
-
-# Yarn v4 metadata
 COPY .yarn .yarn
 
-# workspace package 定義
+# ----------------------------------
+# Config files
+# ----------------------------------
+COPY app-config*.yaml ./
+
+# ----------------------------------
+# Workspace package.json のみ
+# ----------------------------------
 COPY packages packages
 COPY plugins plugins
 COPY dynamic-plugins dynamic-plugins
 
-# ----------------------------------
-# Yarn config
-# ----------------------------------
+RUN find packages -type f ! -name package.json -delete || true
+RUN find plugins -type f ! -name package.json -delete || true
+RUN find dynamic-plugins -type f ! -name package.json -delete || true
+
 RUN yarn config set nodeLinker node-modules
 
-RUN echo "===== Yarn enableScripts =====" \
- && yarn config get enableScripts
-
-RUN echo "===== .yarnrc.yml =====" \
- && cat .yarnrc.yml || true
+RUN yarn install --immutable
 
 # ----------------------------------
-# Install
-# ----------------------------------
-RUN yarn install --immutable --inline-builds
-
-# ----------------------------------
-# ソース全体をコピー
+# Full source
 # ----------------------------------
 COPY . .
 
-# ----------------------------------
-# Build Backstage
-# ----------------------------------
 RUN yarn build
-
-# bundle.tar.gz / skeleton.tar.gz 作成
-RUN yarn workspace backend build-image
 
 # ==================================================
 # 2. Runtime stage
@@ -81,61 +64,43 @@ FROM registry.redhat.io/rhdh/rhdh-hub-rhel9:1.10.0
 WORKDIR /opt/app-root/src
 
 ENV NODE_ENV=production \
-    NODE_PATH=/opt/app-root/src/node_modules
+    NODE_OPTIONS=--max_old_space_size=4096
 
-# ----------------------------------
-# Runtime tools
-# ----------------------------------
 USER 0
-RUN microdnf install -y jq && microdnf clean all || true
-USER 1001
 
-# ----------------------------------
-# Backend
-# ----------------------------------
-COPY --from=builder /app/packages/backend/dist \
-    /opt/app-root/src/packages/backend/dist
-
-COPY --from=builder /app/packages/backend/package.json \
-    /opt/app-root/src/packages/backend/package.json
-
-# ----------------------------------
-# Frontend
-# ----------------------------------
-COPY --from=builder /app/packages/app/dist \
-    /opt/app-root/src/packages/app/dist
-
-# ----------------------------------
-# Production dependencies
-# ----------------------------------
-COPY --from=builder /app/node_modules \
-    /opt/app-root/src/node_modules
+RUN microdnf install -y \
+    jq \
+    tar \
+    gzip \
+ && microdnf clean all
 
 # ----------------------------------
 # Backstage bundles
 # ----------------------------------
-COPY --from=builder /app/dist/skeleton.tar.gz \
-    /opt/app-root/src/skeleton.tar.gz
+COPY --from=builder /app/dist/skeleton.tar.gz .
+COPY --from=builder /app/dist/bundle.tar.gz .
 
-COPY --from=builder /app/dist/bundle.tar.gz \
-    /opt/app-root/src/bundle.tar.gz
+RUN tar xzf skeleton.tar.gz \
+ && rm -f skeleton.tar.gz
+
+RUN tar xzf bundle.tar.gz \
+ && rm -f bundle.tar.gz
 
 # ----------------------------------
 # Dynamic plugins
 # ----------------------------------
 COPY --from=builder /app/dynamic-plugins/dist \
-    /opt/app-root/src/dynamic-plugins/dist
+    ./dynamic-plugins/dist
 
 # ----------------------------------
 # Config
 # ----------------------------------
-COPY app-config.yaml \
-    /opt/app-root/src/app-config/
+COPY app-config.yaml .
+COPY app-config.production.yaml .
+COPY app-config.dynamic-plugins.yaml .
 
-COPY app-config.production.yaml \
-    /opt/app-root/src/app-config/
+RUN chown -R 1001:0 /opt/app-root/src
 
-COPY app-config.dynamic-plugins.yaml \
-    /opt/app-root/src/app-config/
+USER 1001
 
-CMD ["node", "packages/backend"]
+CMD ["node", "packages/backend", "--config", "app-config.yaml", "--config", "app-config.production.yaml"]
