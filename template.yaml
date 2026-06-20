@@ -80,6 +80,7 @@ spec:
 
     - id: register
       action: catalog:register
+      continueOnError: true
       input:
         catalogInfoUrl: https://github.com/${{ parameters.git_owner_name }}/${{ parameters.git_repo_name }}/blob/main/catalog-info.yaml
 

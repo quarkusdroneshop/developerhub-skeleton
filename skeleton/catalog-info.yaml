@@ -15,4 +15,3 @@ spec:
   type: service
   lifecycle: production
   owner: ${{ values.owner }}
-  system: ${{ values.cluster_name }}
