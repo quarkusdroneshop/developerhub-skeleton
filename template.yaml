@@ -59,6 +59,7 @@ spec:
     - id: deploy-argo
       name: ArgoCD Pipeline 登録
       action: http:backstage:request
+      continueOnError: true
       input:
         method: POST
         path: /proxy/argocd/api/v1/applications
