@@ -25,10 +25,6 @@ spec:
           type: string
           description: apps.<cluster-domain>
           default: apps.ocp.hfczn.sandbox2320.opentlc.com
-        clusterName:
-          type: string
-          description: Backstage Kubernetes cluster name
-          default: ocp.hfczn.sandbox2320.opentlc.com
         tektonToken:
           type: string
           description: "Tekton Listener 認証トークン"
@@ -68,7 +64,7 @@ spec:
         path: /api/kubernetes/proxy/api/v1/namespaces/${{ parameters.tektonNamespace }}/persistentvolumeclaims/${{ parameters.app_name }}-shared-workspace-pvc?fieldManager=backstage&force=true
         headers:
           Content-Type: application/apply-patch+yaml
-          X-Kubernetes-Cluster: ${{ parameters.clusterName }}
+          X-Kubernetes-Cluster: ${{ parameters.clusterDomain | replace("apps.", "") }}
         body:
           apiVersion: v1
           kind: PersistentVolumeClaim
@@ -90,7 +86,7 @@ spec:
         path: /api/kubernetes/proxy/apis/tekton.dev/v1/namespaces/${{ parameters.tektonNamespace }}/pipelines/${{ parameters.app_name }}?fieldManager=backstage&force=true
         headers:
           Content-Type: application/apply-patch+yaml
-          X-Kubernetes-Cluster: ${{ parameters.clusterName }}
+          X-Kubernetes-Cluster: ${{ parameters.clusterDomain | replace("apps.", "") }}
         body:
           apiVersion: tekton.dev/v1
           kind: Pipeline
@@ -219,7 +215,7 @@ spec:
         path: /api/kubernetes/proxy/apis/tekton.dev/v1/namespaces/${{ parameters.tektonNamespace }}/pipelineruns
         headers:
           Content-Type: application/json
-          X-Kubernetes-Cluster: ${{ parameters.clusterName }}
+          X-Kubernetes-Cluster: ${{ parameters.clusterDomain | replace("apps.", "") }}
         body:
           apiVersion: tekton.dev/v1
           kind: PipelineRun
