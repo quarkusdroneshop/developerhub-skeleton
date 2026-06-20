@@ -58,14 +58,18 @@ spec:
 
     - id: create-pipelinerun
       name: Create PipelineRun
-      action: kubernetes:create-pipelinerun
+      action: http:backstage:request
       input:
-        namespace: quarkusdroneshop-cicd
-        manifest: |
+        method: POST
+        path: /proxy/kubernetes-api/apis/tekton.dev/v1/namespaces/quarkusdroneshop-cicd/pipelineruns
+        headers:
+          Content-Type: application/json
+        body:
           apiVersion: tekton.dev/v1
           kind: PipelineRun
           metadata:
             generateName: reward-run-
+            namespace: quarkusdroneshop-cicd
           spec:
             pipelineRef:
               name: build-and-push-quarkusdroneshop-reward
