@@ -78,12 +78,6 @@ spec:
                 persistentVolumeClaim:
                   claimName: quarkusdroneshop-reward-shared-workspace-pvc
 
-    - id: register
-      action: catalog:register
-      continueOnError: true
-      input:
-        catalogInfoUrl: https://github.com/${{ parameters.git_owner_name }}/${{ parameters.git_repo_name }}/blob/main/catalog-info.yaml
-
   output:
     links:
       - title: GitHub Repository
@@ -91,7 +85,3 @@ spec:
 
       - title: OpenShift Pipelines
         url: https://console-openshift-console.${{ parameters.clusterDomain }}/k8s/ns/${{ parameters.tektonNamespace }}/tekton.dev~v1~PipelineRun
-
-      - title: Backstage Entity
-        icon: catalog
-        entityRef: ${{ steps['register'].output.entityRef }}
