@@ -18,16 +18,17 @@ spec:
         image_tag: { type: string, default: latest }
 
     - title: Tekton情報
-      required: [tektonNamespace, clusterDomain, tektonToken]
+      required: [tektonNamespace, clusterDomain, adminToken]
       properties:
         tektonNamespace: { type: string, default: quarkusdroneshop-cicd }
         clusterDomain:
           type: string
           description: apps.<cluster-domain>
-          default: apps.ocp.hfczn.sandbox2320.opentlc.com
-        tektonToken:
+          default: apps.ocp.mnlq9.sandbox1332.opentlc.com
+        adminToken:
           type: string
-          description: "Tekton Listener 認証トークン"
+          ui:widget: password
+          description: "ターゲットクラスターのAdminトークン (oc whoami --show-token)"
 
     - title: 所有者情報
       required: [owner]
@@ -64,6 +65,7 @@ spec:
         path: /proxy/target-cluster/api/v1/namespaces/${{ parameters.tektonNamespace }}?fieldManager=backstage&force=true
         headers:
           Content-Type: application/apply-patch+yaml
+          Authorization: "Bearer ${{ parameters.adminToken }}"
         body: |
           apiVersion: v1
           kind: Namespace
@@ -78,6 +80,7 @@ spec:
         path: /proxy/target-cluster/api/v1/namespaces/${{ parameters.tektonNamespace }}/persistentvolumeclaims/${{ parameters.app_name }}-shared-workspace-pvc?fieldManager=backstage&force=true
         headers:
           Content-Type: application/apply-patch+yaml
+          Authorization: "Bearer ${{ parameters.adminToken }}"
         body: |
           apiVersion: v1
           kind: PersistentVolumeClaim
@@ -99,6 +102,7 @@ spec:
         path: /proxy/target-cluster/apis/tekton.dev/v1/namespaces/${{ parameters.tektonNamespace }}/pipelines/${{ parameters.app_name }}?fieldManager=backstage&force=true
         headers:
           Content-Type: application/apply-patch+yaml
+          Authorization: "Bearer ${{ parameters.adminToken }}"
         body: |
           apiVersion: tekton.dev/v1
           kind: Pipeline
@@ -202,6 +206,7 @@ spec:
         path: /proxy/target-cluster/apis/tekton.dev/v1/namespaces/${{ parameters.tektonNamespace }}/pipelineruns
         headers:
           Content-Type: application/json
+          Authorization: "Bearer ${{ parameters.adminToken }}"
         body:
           apiVersion: tekton.dev/v1
           kind: PipelineRun
