@@ -1,9 +1,9 @@
 apiVersion: scaffolder.backstage.io/v1beta3
 kind: Template
 metadata:
-  name: tekton-gitops-trigger-template
-  title: Tekton GitOps + Trigger Template
-  description: ArgoCDでPipeline管理し、BackstageからTriggerでPipelineRun実行
+  name: tekton-trigger-template
+  title: Tekton + Trigger Template
+  description: BackstageからTriggerでPipelineRun実行
 spec:
   owner: user:default/nmushino
   type: service
@@ -89,7 +89,7 @@ spec:
           apiVersion: tekton.dev/v1
           kind: Pipeline
           metadata:
-            name: build-and-push-${{ parameters.app_name }}
+            name: ${{ parameters.app_name }}
             namespace: ${{ parameters.tektonNamespace }}
             labels:
               app: ${{ parameters.app_name }}
@@ -217,11 +217,11 @@ spec:
           apiVersion: tekton.dev/v1
           kind: PipelineRun
           metadata:
-            generateName: ${{ parameters.app_name }}-run-
+            generateName: ${{ parameters.app_name }}-
             namespace: ${{ parameters.tektonNamespace }}
           spec:
             pipelineRef:
-              name: build-and-push-${{ parameters.app_name }}
+              name: ${{ parameters.app_name }}
             workspaces:
               - name: shared-workspace
                 persistentVolumeClaim:
