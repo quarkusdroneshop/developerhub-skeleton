@@ -61,7 +61,7 @@ spec:
       action: http:backstage:request
       input:
         method: PATCH
-        path: /proxy/kubernetes-api/api/v1/namespaces/${{ parameters.tektonNamespace }}?fieldManager=backstage&force=true
+        path: /proxy/target-cluster/api/v1/namespaces/${{ parameters.tektonNamespace }}?fieldManager=backstage&force=true
         headers:
           Content-Type: application/apply-patch+yaml
         body: |
@@ -75,7 +75,7 @@ spec:
       action: http:backstage:request
       input:
         method: PATCH
-        path: /proxy/kubernetes-api/api/v1/namespaces/${{ parameters.tektonNamespace }}/persistentvolumeclaims/${{ parameters.app_name }}-shared-workspace-pvc?fieldManager=backstage&force=true
+        path: /proxy/target-cluster/api/v1/namespaces/${{ parameters.tektonNamespace }}/persistentvolumeclaims/${{ parameters.app_name }}-shared-workspace-pvc?fieldManager=backstage&force=true
         headers:
           Content-Type: application/apply-patch+yaml
         body: |
@@ -96,7 +96,7 @@ spec:
       action: http:backstage:request
       input:
         method: PATCH
-        path: /proxy/kubernetes-api/apis/tekton.dev/v1/namespaces/${{ parameters.tektonNamespace }}/pipelines/${{ parameters.app_name }}?fieldManager=backstage&force=true
+        path: /proxy/target-cluster/apis/tekton.dev/v1/namespaces/${{ parameters.tektonNamespace }}/pipelines/${{ parameters.app_name }}?fieldManager=backstage&force=true
         headers:
           Content-Type: application/apply-patch+yaml
         body: |
@@ -199,7 +199,7 @@ spec:
       action: http:backstage:request
       input:
         method: POST
-        path: /proxy/kubernetes-api/apis/tekton.dev/v1/namespaces/${{ parameters.tektonNamespace }}/pipelineruns
+        path: /proxy/target-cluster/apis/tekton.dev/v1/namespaces/${{ parameters.tektonNamespace }}/pipelineruns
         headers:
           Content-Type: application/json
         body:
