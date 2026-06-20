@@ -24,7 +24,11 @@ spec:
         clusterDomain:
           type: string
           description: apps.<cluster-domain>
-          default: apps.example.com
+          default: apps.ocp.hfczn.sandbox2320.opentlc.com
+        clusterName:
+          type: string
+          description: Backstage Kubernetes cluster name
+          default: ocp.hfczn.sandbox2320.opentlc.com
         tektonToken:
           type: string
           description: "Tekton Listener 認証トークン"
@@ -61,9 +65,10 @@ spec:
       action: http:backstage:request
       input:
         method: PATCH
-        path: /proxy/kubernetes-api/api/v1/namespaces/${{ parameters.tektonNamespace }}/persistentvolumeclaims/${{ parameters.app_name }}-shared-workspace-pvc?fieldManager=backstage&force=true
+        path: /api/kubernetes/proxy/api/v1/namespaces/${{ parameters.tektonNamespace }}/persistentvolumeclaims/${{ parameters.app_name }}-shared-workspace-pvc?fieldManager=backstage&force=true
         headers:
           Content-Type: application/apply-patch+yaml
+          X-Kubernetes-Cluster: ${{ parameters.clusterName }}
         body:
           apiVersion: v1
           kind: PersistentVolumeClaim
@@ -82,9 +87,10 @@ spec:
       action: http:backstage:request
       input:
         method: PATCH
-        path: /proxy/kubernetes-api/apis/tekton.dev/v1/namespaces/${{ parameters.tektonNamespace }}/pipelines/${{ parameters.app_name }}?fieldManager=backstage&force=true
+        path: /api/kubernetes/proxy/apis/tekton.dev/v1/namespaces/${{ parameters.tektonNamespace }}/pipelines/${{ parameters.app_name }}?fieldManager=backstage&force=true
         headers:
           Content-Type: application/apply-patch+yaml
+          X-Kubernetes-Cluster: ${{ parameters.clusterName }}
         body:
           apiVersion: tekton.dev/v1
           kind: Pipeline
@@ -210,9 +216,10 @@ spec:
       action: http:backstage:request
       input:
         method: POST
-        path: /proxy/kubernetes-api/apis/tekton.dev/v1/namespaces/${{ parameters.tektonNamespace }}/pipelineruns
+        path: /api/kubernetes/proxy/apis/tekton.dev/v1/namespaces/${{ parameters.tektonNamespace }}/pipelineruns
         headers:
           Content-Type: application/json
+          X-Kubernetes-Cluster: ${{ parameters.clusterName }}
         body:
           apiVersion: tekton.dev/v1
           kind: PipelineRun
