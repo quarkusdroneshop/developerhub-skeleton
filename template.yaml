@@ -24,7 +24,7 @@ spec:
         clusterDomain:
           type: string
           description: apps.<cluster-domain>
-          default: apps.ocp.mnlq9.sandbox1332.opentlc.com
+          default: apps.ocp.hfczn.sandbox2320.opentlc.com
         adminToken:
           type: string
           ui:widget: password
