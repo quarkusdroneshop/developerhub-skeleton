@@ -56,33 +56,6 @@ spec:
         defaultBranch: main
         repoVisibility: public
 
-    - id: deploy-argo
-      name: ArgoCD Pipeline 登録
-      action: http:backstage:request
-      continueOnError: true
-      input:
-        method: POST
-        path: /proxy/argocd/api/v1/applications
-        headers:
-          Content-Type: application/json
-        body:
-          metadata:
-            name: ${{ parameters.app_name }}-pipeline
-            namespace: quarkusdroneshop-cicd
-          spec:
-            project: default
-            source:
-              repoURL: ${{ steps['publish'].output.remoteUrl }}
-              path: pipeline/quarkusdroneshop-reward
-              targetRevision: HEAD
-            destination:
-              server: https://kubernetes.default.svc
-              namespace: quarkusdroneshop-cicd
-            syncPolicy:
-              automated:
-                prune: true
-                selfHeal: true
-        
     - id: create-pipelinerun
       name: Create PipelineRun
       action: kubernetes:create-pipelinerun
