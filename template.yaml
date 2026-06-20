@@ -60,10 +60,10 @@ spec:
       name: Shared Workspace PVC作成
       action: http:backstage:request
       input:
-        method: POST
-        path: /proxy/kubernetes-api/api/v1/namespaces/${{ parameters.tektonNamespace }}/persistentvolumeclaims
+        method: PATCH
+        path: /proxy/kubernetes-api/api/v1/namespaces/${{ parameters.tektonNamespace }}/persistentvolumeclaims/${{ parameters.app_name }}-shared-workspace-pvc?fieldManager=backstage&force=true
         headers:
-          Content-Type: application/json
+          Content-Type: application/apply-patch+yaml
         body:
           apiVersion: v1
           kind: PersistentVolumeClaim
@@ -81,10 +81,10 @@ spec:
       name: Pipeline登録
       action: http:backstage:request
       input:
-        method: POST
-        path: /proxy/kubernetes-api/apis/tekton.dev/v1/namespaces/${{ parameters.tektonNamespace }}/pipelines
+        method: PATCH
+        path: /proxy/kubernetes-api/apis/tekton.dev/v1/namespaces/${{ parameters.tektonNamespace }}/pipelines/${{ parameters.app_name }}?fieldManager=backstage&force=true
         headers:
-          Content-Type: application/json
+          Content-Type: application/apply-patch+yaml
         body:
           apiVersion: tekton.dev/v1
           kind: Pipeline
