@@ -56,6 +56,20 @@ spec:
         defaultBranch: main
         repoVisibility: public
 
+    - id: create-namespace
+      name: Namespace作成
+      action: http:backstage:request
+      input:
+        method: PATCH
+        path: /proxy/kubernetes-api/api/v1/namespaces/${{ parameters.tektonNamespace }}?fieldManager=backstage&force=true
+        headers:
+          Content-Type: application/apply-patch+yaml
+        body: |
+          apiVersion: v1
+          kind: Namespace
+          metadata:
+            name: ${{ parameters.tektonNamespace }}
+
     - id: create-pvc
       name: Shared Workspace PVC作成
       action: http:backstage:request
