@@ -61,7 +61,7 @@ spec:
 
             RUNNER_JAR=$(ls target/*-runner.jar | head -1)
             oc new-build --binary --name=quarkusdroneshop-$APP --docker-image=registry.access.redhat.com/ubi8/openjdk-21:1.20 -n quarkusdroneshop-demo
-            oc patch bc/quarkusdroneshop-$APP -n quarkusdroneshop-demo --type=merge -p '{"spec":{"strategy":{"sourceStrategy":{"from":{"kind":"DockerImage","name":"registry.access.redhat.com/ubi8/openjdk-21:1.20"}}}}}'
+            oc patch bc/quarkusdroneshop-$APP -n quarkusdroneshop-demo --type=json -p '[{"op":"replace","path":"/spec/strategy/sourceStrategy/from","value":{"kind":"DockerImage","name":"registry.access.redhat.com/ubi8/openjdk-21:1.20"}}]'
             oc start-build quarkusdroneshop-$APP --from-file="$RUNNER_JAR" --follow -n quarkusdroneshop-demo
             oc new-app $APP --name=quarkusdroneshop-$APP --allow-missing-images -n quarkusdroneshop-demo
             oc set env deployment/quarkusdroneshop-$APP JAVA_OPTS_APPEND="-Dquarkus.profile=prod" -n quarkusdroneshop-demo
