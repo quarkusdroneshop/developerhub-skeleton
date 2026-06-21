@@ -29,7 +29,14 @@ spec:
           type: string
           title: システム名
           description: このコンポーネントが属するシステム名
-          default: quarkusdroneshop
+          enum:
+            - a-cluster
+            - b-cluster
+            - c-cluster
+          enumNames:
+            - A クラスター
+            - B クラスター
+            - C クラスター
         created_at:
           type: string
           title: 作成日時
