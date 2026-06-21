@@ -40,8 +40,8 @@ spec:
         created_at:
           type: string
           title: 作成日時
-          description: 作成日時 (例: 2026-06-21)
-          ui:field: DatePicker
+          description: 作成日時 (YYYY-MM-DD)
+          ui:widget: date
 
     - title: Tekton情報
       required: [tektonNamespace, clusterDomain]
