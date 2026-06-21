@@ -308,7 +308,13 @@ spec:
                       KAFKA_URL=$(oc get configmap droneshop-config -n $NS -o jsonpath='{.data.KAFKA_BOOTSTRAP_URLS}')
                       oc set env deployment/$APP KAFKA_BOOTSTRAP_URLS=$KAFKA_URL JAVA_OPTS_APPEND="-Dquarkus.profile=prod" -n $NS
                       oc patch deployment/$APP -n $NS --type=json \
-                        -p="[{\"op\":\"add\",\"path\":\"/spec/template/metadata/labels/app.kubernetes.io~1instance\",\"value\":\"quarkusdroneshop-$APP\"}]"
+                        -p="[
+                          {\"op\":\"add\",\"path\":\"/metadata/labels/app.kubernetes.io~1name\",\"value\":\"$APP\"},
+                          {\"op\":\"add\",\"path\":\"/metadata/labels/app.kubernetes.io~1part-of\",\"value\":\"quarkusdroneshop\"},
+                          {\"op\":\"add\",\"path\":\"/spec/template/metadata/labels/app.kubernetes.io~1instance\",\"value\":\"quarkusdroneshop-$APP\"},
+                          {\"op\":\"add\",\"path\":\"/spec/template/metadata/labels/app.kubernetes.io~1name\",\"value\":\"$APP\"},
+                          {\"op\":\"add\",\"path\":\"/spec/template/metadata/labels/app.kubernetes.io~1part-of\",\"value\":\"quarkusdroneshop\"}
+                        ]"
                 workspaces:
                   - name: source
                     workspace: shared-workspace
