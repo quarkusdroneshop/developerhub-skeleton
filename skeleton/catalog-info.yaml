@@ -1,8 +1,8 @@
 apiVersion: backstage.io/v1alpha1
 kind: Component
 metadata:
-  name: ${{ values.app_name }}
-  description: "${{ values.app_name }} のマイクロサービスです"
+  name: quarkusdroneshop-${{ values.app_name }}
+  description: "quarkusdroneshop-${{ values.app_name }} のマイクロサービスです"
   tags:
     - ${{ values.image_tag }}
     - ${{ values.system_name }}
@@ -14,7 +14,7 @@ metadata:
     backstage.io/kubernetes-cluster: ${{ values.system_name }}
     backstage.io/kubernetes-label-selector: app=${{ values.app_name }}
     argocd/app-selector: app.kubernetes.io/instance=${{ values.app_name }}-init
-    tektonci.io/pipeline: ${{ values.app_name }}
+    tektonci.io/pipeline: build-and-push-quarkusdroneshop-${{ values.app_name }}
     tekton.dev/type: pipeline
     rhdh.redhat.com/tekton-enabled: "true"
 spec:
