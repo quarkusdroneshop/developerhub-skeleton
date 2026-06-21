@@ -39,7 +39,7 @@ spec:
         - name: CONTEXT_DIR
           value: .
         - name: GOALS
-          value: "clean verify -Dquarkus.package.jar.type=uber-jar"
+          value: "clean verify"
       workspaces:
         - name: source
           workspace: shared-workspace
@@ -57,14 +57,13 @@ spec:
 
             APP=${{ values.app_name }}
             oc delete all -l app=$APP -n quarkusdroneshop-demo || true
-            oc delete bc/quarkusdroneshop-$APP -n quarkusdroneshop-demo || true
+            oc delete bc/$APP -n quarkusdroneshop-demo || true
 
-            RUNNER_JAR=$(ls target/*-runner.jar | head -1)
-            oc new-build --binary --name=quarkusdroneshop-$APP --docker-image=registry.access.redhat.com/ubi8/openjdk-21:1.20 -n quarkusdroneshop-demo
-            oc patch bc/quarkusdroneshop-$APP -n quarkusdroneshop-demo --type=json -p '[{"op":"replace","path":"/spec/strategy/sourceStrategy/from","value":{"kind":"DockerImage","name":"registry.access.redhat.com/ubi8/openjdk-21:1.20"}}]'
-            oc start-build quarkusdroneshop-$APP --from-file="$RUNNER_JAR" --follow -n quarkusdroneshop-demo
-            oc new-app $APP --name=quarkusdroneshop-$APP --allow-missing-images -n quarkusdroneshop-demo
-            oc set env deployment/quarkusdroneshop-$APP JAVA_OPTS_APPEND="-Dquarkus.profile=prod" -n quarkusdroneshop-demo
+            oc new-build --binary --name=$APP --docker-image=registry.access.redhat.com/ubi8/openjdk-21:1.20 -n quarkusdroneshop-demo
+            oc patch bc/$APP -n quarkusdroneshop-demo --type=json -p '[{"op":"replace","path":"/spec/strategy/sourceStrategy/from","value":{"kind":"DockerImage","name":"registry.access.redhat.com/ubi8/openjdk-21:1.20"}}]'
+            oc start-build $APP --from-dir=target/quarkus-app/ --follow -n quarkusdroneshop-demo
+            oc new-app $APP --name=$APP --allow-missing-images -n quarkusdroneshop-demo
+            oc set env deployment/$APP JAVA_OPTS_APPEND="-Dquarkus.profile=prod" -n quarkusdroneshop-demo
 
             PGSQL_URL=$(oc get configmap droneshop-config -n quarkusdroneshop-demo -o=jsonpath='{.data.PGSQL_URL}')
             oc set env deployment/quarkusdroneshop-$APP PGSQL_URL=$PGSQL_URL -n quarkusdroneshop-demo
