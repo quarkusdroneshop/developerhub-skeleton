@@ -117,14 +117,14 @@ spec:
       action: http:backstage:request
       input:
         method: PATCH
-        path: /proxy/target-cluster/apis/tekton.dev/v1/namespaces/${{ parameters.tektonNamespace }}/pipelines/build-and-push-${{ parameters.app_name }}?fieldManager=backstage&force=true
+        path: /proxy/target-cluster/apis/tekton.dev/v1/namespaces/${{ parameters.tektonNamespace }}/pipelines/build-and-push-quarkusdroneshop-${{ parameters.app_name }}?fieldManager=backstage&force=true
         headers:
           Content-Type: application/apply-patch+yaml
         body: |
           apiVersion: tekton.dev/v1
           kind: Pipeline
           metadata:
-            name: build-and-push-${{ parameters.app_name }}
+            name: build-and-push-quarkusdroneshop-${{ parameters.app_name }}
             namespace: ${{ parameters.tektonNamespace }}
             labels:
               app: ${{ parameters.app_name }}
@@ -322,11 +322,11 @@ spec:
           apiVersion: tekton.dev/v1
           kind: PipelineRun
           metadata:
-            generateName: build-and-push-${{ parameters.app_name }}-
+            generateName: build-and-push-quarkusdroneshop-${{ parameters.app_name }}-
             namespace: ${{ parameters.tektonNamespace }}
           spec:
             pipelineRef:
-              name: build-and-push-${{ parameters.app_name }}
+              name: build-and-push-quarkusdroneshop-${{ parameters.app_name }}
             workspaces:
               - name: shared-workspace
                 persistentVolumeClaim:

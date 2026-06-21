@@ -1,10 +1,10 @@
 apiVersion: tekton.dev/v1
 kind: Pipeline
 metadata:
-  name: build-and-push-quarkusdroneshop-reward
+  name: build-and-push-quarkusdroneshop-${{ values.app_name }}
   namespace: quarkusdroneshop-cicd
   labels:
-    app: quarkusdroneshop-reward
+    app: quarkusdroneshop-${{ values.app_name }}
 spec:
   params:
     - default: latest
@@ -34,12 +34,12 @@ spec:
         - fetch-repository
       taskRef:
         kind: Task
-        name: maven-no-settings11
+        name: maven-no-settings21
       params:
         - name: CONTEXT_DIR
           value: .
         - name: GOALS
-          value: "clean package"
+          value: "clean verify -Dquarkus.package.type=uber-jar"
       workspaces:
         - name: source
           workspace: shared-workspace
@@ -55,24 +55,26 @@ spec:
             #!/bin/bash
             set -e
 
-            oc delete all -l app=reward -n quarkusdroneshop-demo || true
-            oc delete bc/reward -n quarkusdroneshop-demo || true
-            oc new-build --binary --name=reward --image-stream=java:openjdk-17-ubi8 -n quarkusdroneshop-demo
-            oc start-build reward --from-dir=target/quarkus-app/ --follow -n quarkusdroneshop-demo
-            oc new-app reward --name=reward --allow-missing-images -n quarkusdroneshop-demo
-            oc set env deployment/reward JAVA_OPTS_APPEND="-Dquarkus.profile=prod" -n quarkusdroneshop-demo
+            APP=${{ values.app_name }}
+            oc delete all -l app=$APP -n quarkusdroneshop-demo || true
+            oc delete bc/$APP -n quarkusdroneshop-demo || true
+            oc new-build --binary --name=$APP --image-stream=ubi8-openjdk-21:1.18 -n quarkusdroneshop-demo
+            RUNNER_JAR=$(ls target/*-runner.jar | head -1)
+            oc start-build $APP --from-file="$RUNNER_JAR" --follow -n quarkusdroneshop-demo
+            oc new-app $APP --name=$APP --allow-missing-images -n quarkusdroneshop-demo
+            oc set env deployment/$APP JAVA_OPTS_APPEND="-Dquarkus.profile=prod" -n quarkusdroneshop-demo
 
             PGSQL_URL=$(oc get configmap droneshop-config -n quarkusdroneshop-demo -o=jsonpath='{.data.PGSQL_URL}')
-            oc set env deployment/reward PGSQL_URL=$PGSQL_URL -n quarkusdroneshop-demo
+            oc set env deployment/$APP PGSQL_URL=$PGSQL_URL -n quarkusdroneshop-demo
             PGSQL_USER=$(oc get secret droneshopdb-pguser-droneshopadmin -n quarkusdroneshop-demo -o=jsonpath='{.data.user}' | base64 --decode)
-            oc set env deployment/reward PGSQL_USER=$PGSQL_USER -n quarkusdroneshop-demo
+            oc set env deployment/$APP PGSQL_USER=$PGSQL_USER -n quarkusdroneshop-demo
             PGSQL_PASS=$(oc get secret droneshopdb-pguser-droneshopadmin -n quarkusdroneshop-demo -o=jsonpath='{.data.password}' | base64 --decode)
-            oc set env deployment/reward PGSQL_PASS=$PGSQL_PASS -n quarkusdroneshop-demo
-            
+            oc set env deployment/$APP PGSQL_PASS=$PGSQL_PASS -n quarkusdroneshop-demo
+
             KAFKA_URL=$(oc get configmap droneshop-config -n quarkusdroneshop-demo -o=jsonpath='{.data.KAFKA_BOOTSTRAP_URLS}')
-            oc set env deployment/reward KAFKA_BOOTSTRAP_URLS=$KAFKA_URL -n quarkusdroneshop-demo
+            oc set env deployment/$APP KAFKA_BOOTSTRAP_URLS=$KAFKA_URL -n quarkusdroneshop-demo
             QUARKUS_LOG_LEVEL=$(oc get configmap droneshop-config -n quarkusdroneshop-demo -o=jsonpath='{.data.QUARKUS_LOG_LEVEL}')
-            oc set env deployment/reward QUARKUS_LOG_LEVEL=$QUARKUS_LOG_LEVEL -n quarkusdroneshop-demo
+            oc set env deployment/$APP QUARKUS_LOG_LEVEL=$QUARKUS_LOG_LEVEL -n quarkusdroneshop-demo
       workspaces:
         - name: source
           workspace: shared-workspace
