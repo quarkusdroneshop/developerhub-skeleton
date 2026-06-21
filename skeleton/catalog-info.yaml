@@ -2,7 +2,7 @@ apiVersion: backstage.io/v1alpha1
 kind: Component
 metadata:
   name: ${{ values.app_name }}
-  description: ${{ values.app_name }} のマイクロサービスです
+  description: "${{ values.app_name }} のマイクロサービスです (作成: ${{ values.created_at }})"
   tags:
     - ${{ values.image_tag }}
     - ${{ values.system_name }}
