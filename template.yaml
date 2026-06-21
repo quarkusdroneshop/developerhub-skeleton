@@ -258,7 +258,7 @@ spec:
                     value: $(tasks.publish-test-report.results.report-url)
               - name: push-oc-apps
                 runAfter:
-                  - owasp-dependency-check
+                  - pipeline-summary
                 taskRef:
                   name: push-app-task
                 params:
