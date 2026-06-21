@@ -1,0 +1,10 @@
+#!/bin/sh
+echo "=== RUNTIME DIAGNOSTICS ==="
+echo "--- /opt/backstage/ ---"
+ls /opt/backstage/ 2>&1 || echo "NOT FOUND"
+echo "--- /opt/backstage/packages/backend/dist/ ---"
+ls /opt/backstage/packages/backend/dist/ 2>&1 || echo "NOT FOUND"
+echo "--- /opt/backstage/node_modules/@backstage/ (first 5) ---"
+ls /opt/backstage/node_modules/@backstage/ 2>&1 | head -5 || echo "NOT FOUND"
+echo "=== STARTING NODE ==="
+exec node /opt/backstage/packages/backend/dist/index.cjs.js "$@"

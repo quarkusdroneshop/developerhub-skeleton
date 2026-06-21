@@ -2,18 +2,11 @@
 .yarn/install-state.gz
 **/dist
 **/node_modules
-plugins
-!plugins/auth-backend-module-oidc-provider
-!plugins/dynamic-plugins-info-backend
-!plugins/licensed-users-info-backend
-!plugins/scalprum-backend
 *.local.yaml
 coverage
 dist-types
 examples
-.ci/images/*
-!.ci/images/Dockerfile
-!.yarnrc.yml
+.ci
 hermeto-cache
 .github
 .cursor
@@ -22,4 +15,11 @@ hermeto-cache
 .rulesyncignore
 .pr_agents.toml
 .sonarcloud.properties
+e2e-tests
+docs
+catalog-entities
+translations
+python
+build
+scripts
 

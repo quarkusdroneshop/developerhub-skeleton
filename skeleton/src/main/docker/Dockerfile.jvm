@@ -13,18 +13,13 @@
 #
 # docker run -i --rm -p 8080:8080 quarkus/code-with-quarkus-jvm
 #
-# If you want to include the debug port into your docker image
-# you will have to expose the debug port (default 5005) like this :  EXPOSE 8080 5050
-#
-# Then run the container using :
-#
-# docker run -i --rm -p 8080:8080 -p 5005:5005 -e JAVA_ENABLE_DEBUG="true" quarkus/code-with-quarkus-jvm
-#
 ###
-FROM registry.access.redhat.com/ubi8/openjdk-21:1.18
+FROM registry.access.redhat.com/ubi8/openjdk-21-runtime:1.20
 
-ENV LANG='ja_JP.UTF-8' LANGUAGE='ja_JP:ja'
-ENV JAVA_OPTIONS="-Dquarkus.http.host=0.0.0.0 -Djava.util.logging.manager=org.jboss.logmanager.LogManager"
+ENV LANGUAGE='en_US:en'
+ENV AB_JOLOKIA_OFF=""
+ENV JAVA_OPTS_APPEND="-Dquarkus.http.host=0.0.0.0 -Djava.util.logging.manager=org.jboss.logmanager.LogManager"
+ENV JAVA_APP_JAR="/deployments/quarkus-run.jar"
 
 COPY --chown=185 target/quarkus-app/lib/ /deployments/lib/
 COPY --chown=185 target/quarkus-app/*.jar /deployments/
@@ -34,4 +29,4 @@ COPY --chown=185 target/quarkus-app/quarkus/ /deployments/quarkus/
 EXPOSE 8080
 USER 185
 
-ENTRYPOINT ["java", "-jar", "/deployments/quarkus-run.jar"]
+ENTRYPOINT [ "/opt/jboss/container/java/run/run-java.sh" ]

@@ -53,6 +53,7 @@ dist-dynamic/
 # --------------------------------------------------
 # Coverage
 # --------------------------------------------------
+coverage/
 dynamic-plugins/**/coverage/
 packages/*/coverage/
 plugins/*/coverage/
@@ -117,17 +118,6 @@ dynamic-plugins-root/*
 *.pem
 
 # --------------------------------------------------
-# AI Assistant Local Rules
-# --------------------------------------------------
-.cursor/rules/*.local.mdc
-.rulesync/**/*.local.md
-.claude/**/*.local.md
-.claude/settings.json
-.claude/settings.local.json
-.opencode/**/*.local.md
-.opencode/package-lock.json
-
-# --------------------------------------------------
 # CI / Pipeline
 # --------------------------------------------------
 .ci/pipelines/shared_dir/*
@@ -139,3 +129,19 @@ dynamic-plugins-root/*
 # --------------------------------------------------
 hermeto-cache/
 build/containerfiles/Containerfile.hermeto
+
+# --------------------------------------------------
+# Safety / build optimization (追加分)
+# --------------------------------------------------
+tmp/
+
+# Yarn (explicit extra safety)
+.yarn/cache/
+.yarn/unplugged/
+
+# Node / build artifacts (explicit)
+node_modules/
+dist/
+
+# Git metadata (redundant but harmless if used for export builds)
+.git

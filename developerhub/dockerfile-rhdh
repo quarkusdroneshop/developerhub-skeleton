@@ -1,70 +1,8 @@
-# ==================================================
-# 1. Build stage
-# ==================================================
-FROM node:20.18.3 AS builder
-
-WORKDIR /app
-
-ENV npm_config_build_from_source=false \
-    npm_config_ignore_optional=true \
-    YARN_ENABLE_SCRIPTS=1 \
-    NODE_OPTIONS=--max_old_space_size=8192
-
-RUN apt-get update && apt-get install -y \
-    python3 \
-    make \
-    g++ \
-    gcc \
-    pkg-config \
-    git \
-    build-essential \
- && rm -rf /var/lib/apt/lists/*
-
-RUN corepack enable \
- && corepack prepare yarn@4.16.0 --activate
-
-# ----------------------------------
-# Root metadata
-# ----------------------------------
-COPY package.json yarn.lock .yarnrc.yml ./
-COPY .yarn .yarn
-
-# ----------------------------------
-# Config files
-# ----------------------------------
-COPY app-config*.yaml ./
-
-# ----------------------------------
-# Workspace package.json のみ
-# ----------------------------------
-COPY packages packages
-COPY plugins plugins
-COPY dynamic-plugins dynamic-plugins
-
-RUN find packages -type f ! -name package.json -delete || true
-RUN find plugins -type f ! -name package.json -delete || true
-RUN find dynamic-plugins -type f ! -name package.json -delete || true
-
-RUN yarn config set nodeLinker node-modules
-
-RUN yarn install --immutable
-
-# ----------------------------------
-# Full source
-# ----------------------------------
-COPY . .
-
-RUN yarn build
-
-# ==================================================
-# 2. Runtime stage
-# ==================================================
-FROM registry.redhat.io/rhdh/rhdh-hub-rhel9:1.10.0
-
-WORKDIR /opt/app-root/src
+FROM registry.redhat.io/rhdh/rhdh-hub-rhel9:1.10.1
 
 ENV NODE_ENV=production \
-    NODE_OPTIONS=--max_old_space_size=4096
+    NODE_OPTIONS="--max_old_space_size=2048" \
+    NODE_PATH="/opt/backstage/node_modules:/opt/app-root/src/node_modules"
 
 USER 0
 
@@ -74,33 +12,47 @@ RUN microdnf install -y \
     gzip \
  && microdnf clean all
 
-# ----------------------------------
-# Backstage bundles
-# ----------------------------------
-COPY --from=builder /app/dist/skeleton.tar.gz .
-COPY --from=builder /app/dist/bundle.tar.gz .
+RUN mkdir -p /opt/backstage
 
-RUN tar xzf skeleton.tar.gz \
- && rm -f skeleton.tar.gz
+COPY skeleton.tar.gz /opt/backstage/
+COPY bundle.tar.gz   /opt/backstage/
 
-RUN tar xzf bundle.tar.gz \
- && rm -f bundle.tar.gz
+RUN cd /opt/backstage \
+ && tar xzf skeleton.tar.gz \
+ && tar xzf bundle.tar.gz \
+ && rm -f skeleton.tar.gz bundle.tar.gz \
+ && echo "=== dist ===" && ls packages/backend/dist/ \
+ && echo "=== plugins ===" && ls plugins/
 
-# ----------------------------------
-# Dynamic plugins
-# ----------------------------------
-COPY --from=builder /app/dynamic-plugins/dist \
-    ./dynamic-plugins/dist
+RUN echo "=== node_modules コピー ===" \
+ && cp -a /opt/app-root/src/node_modules /opt/backstage/node_modules \
+ && echo "=== コピー完了: $(ls /opt/backstage/node_modules | wc -l) パッケージ ==="
 
-# ----------------------------------
-# Config
-# ----------------------------------
+# RHDH 1.10のScalprumコールバック登録(__load_plugin_entry__)に対応した
+# 標準フロントエンドバンドルで置き換え（スケルトンの旧版は未対応）
+RUN rm -rf /opt/backstage/packages/app/dist \
+ && cp -a /opt/app-root/src/packages/app/dist /opt/backstage/packages/app/dist
+
+RUN mkdir -p /opt/backstage/node_modules/@internal \
+ && ln -sfn /opt/backstage/plugins/dynamic-plugins-info-backend \
+    /opt/backstage/node_modules/@internal/plugin-dynamic-plugins-info-backend \
+ && ln -sfn /opt/backstage/plugins/licensed-users-info-backend \
+    /opt/backstage/node_modules/@internal/plugin-licensed-users-info-backend \
+ && ln -sfn /opt/backstage/plugins/scalprum-backend \
+    /opt/backstage/node_modules/@internal/plugin-scalprum-backend
+
+RUN ls /opt/backstage/node_modules/@backstage/backend-defaults/package.json \
+ && echo "=== @backstage/backend-defaults OK ===" \
+ && ls /opt/backstage/node_modules/@internal/
+
+WORKDIR /opt/app-root/src
 COPY app-config.yaml .
 COPY app-config.production.yaml .
 COPY app-config.dynamic-plugins.yaml .
 
-RUN chown -R 1001:0 /opt/app-root/src
+RUN chown -R 1001:0 /opt/app-root/src /opt/backstage \
+ && chmod -R a+rX /opt/backstage
 
 USER 1001
 
-CMD ["node", "packages/backend", "--config", "app-config.yaml", "--config", "app-config.production.yaml"]
+ENTRYPOINT ["/bin/sh", "-c", "echo '=== UID:' $(id) && echo '=== /opt/backstage/:' $(ls /opt/backstage/) && echo '=== dist/:' $(ls /opt/backstage/packages/backend/dist/) && exec node /opt/backstage/packages/backend/dist/index.cjs.js \"$@\"", "--"]
