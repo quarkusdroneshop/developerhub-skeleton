@@ -268,7 +268,7 @@ spec:
                       set -e
                       APP=${{ parameters.app_name }}
                       NS=quarkusdroneshop-demo
-                      oc new-build --binary --name=$APP --image-stream=java:openjdk-17-ubi8 -n $NS || true
+                      oc new-build --binary --name=$APP --image-stream=ubi8-openjdk-21:1.18 -n $NS || true
                       oc start-build $APP --from-dir=target/quarkus-app/ --follow -n $NS
                       oc new-app $APP --name=$APP --allow-missing-images -n $NS || true
                 workspaces:
