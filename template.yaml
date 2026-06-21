@@ -308,6 +308,13 @@ spec:
                   - name: source
                     workspace: shared-workspace
 
+    - id: register
+      name: カタログ登録
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps['publish'].output.repoContentsUrl }}
+        catalogInfoPath: /catalog-info.yaml
+
     - id: create-pipelinerun
       name: PipelineRun実行
       action: http:backstage:request
@@ -337,6 +344,9 @@ spec:
     links:
       - title: GitHub Repository
         url: ${{ steps['publish'].output.remoteUrl }}
+      - title: カタログで開く
+        icon: catalog
+        entityRef: ${{ steps['register'].output.entityRef }}
 
       - title: OpenShift Pipelines
         url: https://console-openshift-console.${{ parameters.clusterDomain }}/k8s/ns/${{ parameters.tektonNamespace }}/tekton.dev~v1~PipelineRun
