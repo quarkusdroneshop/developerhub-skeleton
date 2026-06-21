@@ -8,6 +8,7 @@ metadata:
   annotations:
     backstage.io/kubernetes-id: ${{ values.app_name }}
     backstage.io/kubernetes-namespace: quarkusdroneshop-demo
+    backstage.io/kubernetes-cluster: ${{ values.system_name }}
     argocd/app-selector: app.kubernetes.io/instance=${{ values.app_name }}-init
     tektonci.io/pipeline: ${{ values.app_name }}
     tekton.dev/type: pipeline
