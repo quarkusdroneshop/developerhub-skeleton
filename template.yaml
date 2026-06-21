@@ -12,10 +12,29 @@ spec:
     - title: アプリケーション情報
       required: [app_name, git_owner_name, git_repo_name]
       properties:
-        app_name: { type: string }
-        git_owner_name: { type: string }
-        git_repo_name: { type: string }
-        image_tag: { type: string, default: latest }
+        app_name:
+          type: string
+          title: アプリケーション名
+        git_owner_name:
+          type: string
+          title: GitHub オーナー名
+        git_repo_name:
+          type: string
+          title: GitHub リポジトリ名
+        image_tag:
+          type: string
+          title: イメージ TAG
+          default: latest
+        system_name:
+          type: string
+          title: システム名
+          description: このコンポーネントが属するシステム名
+          default: quarkusdroneshop
+        created_at:
+          type: string
+          title: 作成日時
+          description: 作成日時 (例: 2026-06-21)
+          ui:field: DatePicker
 
     - title: Tekton情報
       required: [tektonNamespace, clusterDomain]
@@ -44,6 +63,9 @@ spec:
         values:
           app_name: ${{ parameters.app_name }}
           owner: ${{ parameters.owner }}
+          system_name: ${{ parameters.system_name }}
+          image_tag: ${{ parameters.image_tag }}
+          created_at: ${{ parameters.created_at }}
 
     - id: publish
       name: GitHubへPush
@@ -104,6 +126,10 @@ spec:
             namespace: ${{ parameters.tektonNamespace }}
             labels:
               app: ${{ parameters.app_name }}
+              system: ${{ parameters.system_name }}
+            annotations:
+              backstage.io/image-tag: ${{ parameters.image_tag }}
+              backstage.io/created-at: ${{ parameters.created_at }}
           spec:
             params:
               - default: latest
