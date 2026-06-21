@@ -15,6 +15,7 @@ spec:
         app_name:
           type: string
           title: アプリケーション名
+          description: OpenShift の app ラベルと一致させてください (例: web, counter, inventory)
         git_owner_name:
           type: string
           title: GitHub オーナー名
