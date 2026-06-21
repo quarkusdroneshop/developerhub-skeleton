@@ -306,6 +306,8 @@ spec:
                       oc start-build $APP --from-dir=target/quarkus-app/ --follow -n $NS
                       oc new-app $APP --name=$APP --allow-missing-images -n $NS || true
                       oc expose svc/$APP -n $NS || true
+                      oc label svc/$APP -n $NS app.kubernetes.io/instance=quarkusdroneshop-$APP app.kubernetes.io/part-of=quarkusdroneshop --overwrite
+                      oc label route/$APP -n $NS app.kubernetes.io/instance=quarkusdroneshop-$APP app.kubernetes.io/part-of=quarkusdroneshop --overwrite || true
                       KAFKA_URL=$(oc get configmap droneshop-config -n $NS -o jsonpath='{.data.KAFKA_BOOTSTRAP_URLS}')
                       oc set env deployment/$APP KAFKA_BOOTSTRAP_URLS=$KAFKA_URL JAVA_OPTS_APPEND="-Dquarkus.profile=prod" -n $NS
                       oc patch deployment/$APP -n $NS --type=json \
