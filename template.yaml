@@ -309,6 +309,7 @@ spec:
       input:
         repoContentsUrl: ${{ steps['publish'].output.repoContentsUrl }}
         catalogInfoPath: /catalog-info.yaml
+        optional: true
 
     - id: create-pipelinerun
       name: PipelineRun実行
