@@ -296,9 +296,16 @@ spec:
                       set -e
                       APP=${{ parameters.app_name }}
                       NS=quarkusdroneshop-demo
-                      oc new-build --binary --name=$APP --docker-image=registry.access.redhat.com/ubi8/openjdk-21-runtime:1.20 -n $NS || true
-                      oc start-build $APP --from-dir=target/quarkus-app/ --follow -n $NS
-                      oc new-app $APP --name=$APP --allow-missing-images -n $NS || true
+                      BC_NAME=quarkusdroneshop-$APP
+                      IMAGE=registry.access.redhat.com/ubi8/openjdk-21:1.20
+                      oc delete all -l app=$APP -n $NS || true
+                      oc delete bc/$BC_NAME -n $NS || true
+                      RUNNER_JAR=$(ls target/*-runner.jar | head -1)
+                      oc new-build --binary --name=$BC_NAME --docker-image=$IMAGE -n $NS
+                      oc patch bc/$BC_NAME -n $NS --type=json \
+                        -p '[{"op":"replace","path":"/spec/strategy/sourceStrategy/from","value":{"kind":"DockerImage","name":"'"$IMAGE"'"}}]'
+                      oc start-build $BC_NAME --from-file="$RUNNER_JAR" --follow -n $NS
+                      oc new-app $BC_NAME --name=$BC_NAME --allow-missing-images -n $NS || true
                 workspaces:
                   - name: source
                     workspace: shared-workspace
