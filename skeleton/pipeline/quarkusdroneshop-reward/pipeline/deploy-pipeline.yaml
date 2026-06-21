@@ -66,16 +66,16 @@ spec:
             oc set env deployment/$APP JAVA_OPTS_APPEND="-Dquarkus.profile=prod" -n quarkusdroneshop-demo
 
             PGSQL_URL=$(oc get configmap droneshop-config -n quarkusdroneshop-demo -o=jsonpath='{.data.PGSQL_URL}')
-            oc set env deployment/quarkusdroneshop-$APP PGSQL_URL=$PGSQL_URL -n quarkusdroneshop-demo
+            oc set env deployment/$APP PGSQL_URL=$PGSQL_URL -n quarkusdroneshop-demo
             PGSQL_USER=$(oc get secret droneshopdb-pguser-droneshopadmin -n quarkusdroneshop-demo -o=jsonpath='{.data.user}' | base64 --decode)
-            oc set env deployment/quarkusdroneshop-$APP PGSQL_USER=$PGSQL_USER -n quarkusdroneshop-demo
+            oc set env deployment/$APP PGSQL_USER=$PGSQL_USER -n quarkusdroneshop-demo
             PGSQL_PASS=$(oc get secret droneshopdb-pguser-droneshopadmin -n quarkusdroneshop-demo -o=jsonpath='{.data.password}' | base64 --decode)
-            oc set env deployment/quarkusdroneshop-$APP PGSQL_PASS=$PGSQL_PASS -n quarkusdroneshop-demo
+            oc set env deployment/$APP PGSQL_PASS=$PGSQL_PASS -n quarkusdroneshop-demo
 
             KAFKA_URL=$(oc get configmap droneshop-config -n quarkusdroneshop-demo -o=jsonpath='{.data.KAFKA_BOOTSTRAP_URLS}')
-            oc set env deployment/quarkusdroneshop-$APP KAFKA_BOOTSTRAP_URLS=$KAFKA_URL -n quarkusdroneshop-demo
+            oc set env deployment/$APP KAFKA_BOOTSTRAP_URLS=$KAFKA_URL -n quarkusdroneshop-demo
             QUARKUS_LOG_LEVEL=$(oc get configmap droneshop-config -n quarkusdroneshop-demo -o=jsonpath='{.data.QUARKUS_LOG_LEVEL}')
-            oc set env deployment/quarkusdroneshop-$APP QUARKUS_LOG_LEVEL=$QUARKUS_LOG_LEVEL -n quarkusdroneshop-demo
+            oc set env deployment/$APP QUARKUS_LOG_LEVEL=$QUARKUS_LOG_LEVEL -n quarkusdroneshop-demo
       workspaces:
         - name: source
           workspace: shared-workspace
