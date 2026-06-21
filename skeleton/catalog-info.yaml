@@ -3,6 +3,9 @@ kind: Component
 metadata:
   name: ${{ values.app_name }}
   description: ${{ values.app_name }} のマイクロサービスです
+  tags:
+    - ${{ values.image_tag }}
+    - ${{ values.system_name }}
   labels:
     app: ${{ values.app_name }}
   annotations:
@@ -13,7 +16,6 @@ metadata:
     tektonci.io/pipeline: ${{ values.app_name }}
     tekton.dev/type: pipeline
     rhdh.redhat.com/tekton-enabled: "true"
-    backstage.io/image-tag: ${{ values.image_tag }}
     backstage.io/created-at: ${{ values.created_at }}
 spec:
   type: service
