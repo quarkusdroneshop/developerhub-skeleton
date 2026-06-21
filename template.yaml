@@ -37,11 +37,6 @@ spec:
             - A クラスター
             - B クラスター
             - C クラスター
-        created_at:
-          type: string
-          title: 作成日時
-          description: 作成日時 (YYYY-MM-DD)
-          ui:widget: date
 
     - title: Tekton情報
       required: [tektonNamespace, clusterDomain]
@@ -72,7 +67,6 @@ spec:
           owner: ${{ parameters.owner }}
           system_name: ${{ parameters.system_name }}
           image_tag: ${{ parameters.image_tag }}
-          created_at: ${{ parameters.created_at }}
 
     - id: publish
       name: GitHubへPush
