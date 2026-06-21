@@ -15,6 +15,7 @@ metadata:
     backstage.io/kubernetes-label-selector: app=${{ values.app_name }}
     argocd/app-selector: app.kubernetes.io/instance=${{ values.app_name }}-init
     tektonci.io/pipeline: build-and-push-quarkusdroneshop-${{ values.app_name }}
+    tektonci.io/pipelineNamespace: quarkusdroneshop-cicd
     tekton.dev/type: pipeline
     rhdh.redhat.com/tekton-enabled: "true"
 spec:
