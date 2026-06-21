@@ -305,6 +305,8 @@ spec:
                         -p '[{"op":"replace","path":"/spec/strategy/sourceStrategy/from","value":{"kind":"DockerImage","name":"'"$IMAGE"'"}}]'
                       oc start-build $APP --from-dir=target/quarkus-app/ --follow -n $NS
                       oc new-app $APP --name=$APP --allow-missing-images -n $NS || true
+                      KAFKA_URL=$(oc get configmap droneshop-config -n $NS -o jsonpath='{.data.KAFKA_BOOTSTRAP_URLS}')
+                      oc set env deployment/$APP KAFKA_BOOTSTRAP_URLS=$KAFKA_URL JAVA_OPTS_APPEND="-Dquarkus.profile=prod" -n $NS
                 workspaces:
                   - name: source
                     workspace: shared-workspace
