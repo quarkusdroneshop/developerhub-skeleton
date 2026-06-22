@@ -314,6 +314,7 @@ spec:
                         -p="[
                           {\"op\":\"add\",\"path\":\"/metadata/labels/app.kubernetes.io~1name\",\"value\":\"$APP\"},
                           {\"op\":\"add\",\"path\":\"/metadata/labels/app.kubernetes.io~1part-of\",\"value\":\"quarkusdroneshop\"},
+                          {\"op\":\"add\",\"path\":\"/metadata/labels/app.kubernetes.io~1instance\",\"value\":\"quarkusdroneshop-$APP\"},
                           {\"op\":\"add\",\"path\":\"/spec/template/metadata/labels/app\",\"value\":\"$APP\"},
                           {\"op\":\"add\",\"path\":\"/spec/template/metadata/labels/app.kubernetes.io~1instance\",\"value\":\"quarkusdroneshop-$APP\"},
                           {\"op\":\"add\",\"path\":\"/spec/template/metadata/labels/app.kubernetes.io~1name\",\"value\":\"$APP\"},
@@ -345,6 +346,10 @@ spec:
           metadata:
             generateName: build-and-push-quarkusdroneshop-${{ parameters.app_name }}-
             namespace: ${{ parameters.tektonNamespace }}
+            labels:
+              app: ${{ parameters.app_name }}
+              app.kubernetes.io/instance: quarkusdroneshop-${{ parameters.app_name }}
+              app.kubernetes.io/part-of: quarkusdroneshop
           spec:
             pipelineRef:
               name: build-and-push-quarkusdroneshop-${{ parameters.app_name }}

@@ -10,7 +10,6 @@ metadata:
     app: ${{ values.app_name }}
   annotations:
     backstage.io/kubernetes-id: quarkusdroneshop-${{ values.app_name }}
-    backstage.io/kubernetes-namespace: quarkusdroneshop-demo
     backstage.io/kubernetes-cluster: ${{ values.system_name }}
     backstage.io/kubernetes-label-selector: app.kubernetes.io/instance=quarkusdroneshop-${{ values.app_name }}
     argocd/app-selector: app.kubernetes.io/instance=quarkusdroneshop-${{ values.app_name }}
