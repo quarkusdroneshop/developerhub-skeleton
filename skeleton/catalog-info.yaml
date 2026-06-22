@@ -24,6 +24,10 @@ spec:
   lifecycle: production
   owner: ${{ values.owner }}
   system: ${{ values.system_name }}
+  dependsOn:
+    - resource:shop-cluster-kafka
+    - resource:shop-asite-orders-in
+    - resource:shop-rewards
   consumesApis:
     - quarkusdroneshop-${{ values.app_name }}-orders-in
   providesApis:

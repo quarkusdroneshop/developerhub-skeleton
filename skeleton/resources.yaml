@@ -1,0 +1,42 @@
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: shop-cluster-kafka
+  description: "quarkusdroneshop Kafka クラスター (AMQ Streams)"
+  annotations:
+    backstage.io/kubernetes-cluster: ${{ values.system_name }}
+spec:
+  type: messaging
+  lifecycle: production
+  owner: ${{ values.owner }}
+  system: ${{ values.system_name }}
+---
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: shop-asite-orders-in
+  description: "Kafka トピック: shop-asite.orders-in（注文チケット受信）"
+  annotations:
+    backstage.io/kubernetes-cluster: ${{ values.system_name }}
+spec:
+  type: kafka-topic
+  lifecycle: production
+  owner: ${{ values.owner }}
+  system: ${{ values.system_name }}
+  dependsOn:
+    - resource:shop-cluster-kafka
+---
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: shop-rewards
+  description: "Kafka トピック: rewards（リワードポイント送信）"
+  annotations:
+    backstage.io/kubernetes-cluster: ${{ values.system_name }}
+spec:
+  type: kafka-topic
+  lifecycle: production
+  owner: ${{ values.owner }}
+  system: ${{ values.system_name }}
+  dependsOn:
+    - resource:shop-cluster-kafka
