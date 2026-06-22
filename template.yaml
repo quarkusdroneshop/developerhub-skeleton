@@ -295,6 +295,8 @@ spec:
                     value: |
                       #!/bin/bash
                       set -e
+                      oc login --token=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token) \
+                        --server=https://kubernetes.default.svc --insecure-skip-tls-verify=true
                       APP=${{ parameters.app_name }}
                       NS=quarkusdroneshop-cicd
                       IMAGE=registry.access.redhat.com/ubi8/openjdk-21:1.20
