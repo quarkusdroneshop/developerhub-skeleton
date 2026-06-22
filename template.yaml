@@ -350,8 +350,6 @@ spec:
             namespace: ${{ parameters.tektonNamespace }}
             labels:
               app: ${{ parameters.app_name }}
-              app.kubernetes.io/instance: quarkusdroneshop-${{ parameters.app_name }}
-              app.kubernetes.io/part-of: quarkusdroneshop
           spec:
             pipelineRef:
               name: build-and-push-quarkusdroneshop-${{ parameters.app_name }}
