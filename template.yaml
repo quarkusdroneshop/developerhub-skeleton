@@ -296,7 +296,7 @@ spec:
                       #!/bin/bash
                       set -e
                       APP=${{ parameters.app_name }}
-                      NS=quarkusdroneshop-demo
+                      NS=quarkusdroneshop-cicd
                       IMAGE=registry.access.redhat.com/ubi8/openjdk-21:1.20
                       oc delete all -l app=$APP -n $NS || true
                       oc delete bc/$APP -n $NS || true
