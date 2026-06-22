@@ -326,7 +326,7 @@ spec:
       name: カタログ登録
       action: catalog:register
       input:
-        repoContentsUrl: https://github.com/${{ parameters.git_owner_name }}/${{ parameters.git_repo_name }}/tree/main
+        repoContentsUrl: https://raw.githubusercontent.com/${{ parameters.git_owner_name }}/${{ parameters.git_repo_name }}/main
         catalogInfoPath: /catalog-info.yaml
         optional: true
 
