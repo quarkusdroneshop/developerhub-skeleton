@@ -1,0 +1,13 @@
+# app-config-rhdh.yaml の dynamicPlugins.frontend に以下を追記する
+
+#        internal.plugin-test-report:
+#          mountPoints:
+#            - mountPoint: entity.page.test-report/cards
+#              importName: TestReportContent
+#              config:
+#                layout:
+#                  gridColumn: "1 / -1"
+#          entityTabs:
+#            - path: /test-report
+#              title: Test Report
+#              mountPoint: entity.page.test-report
