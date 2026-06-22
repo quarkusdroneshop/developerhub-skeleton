@@ -354,6 +354,14 @@ spec:
         catalogInfoPath: /resources.yaml
         optional: true
 
+    - id: register-kafka-apis
+      name: Kafka API カタログ登録
+      action: catalog:register
+      input:
+        repoContentsUrl: https://github.com/${{ parameters.git_owner_name }}/${{ parameters.git_repo_name }}/blob/main
+        catalogInfoPath: /kafka-apis.yaml
+        optional: true
+
     - id: create-pipelinerun
       name: PipelineRun実行
       action: http:backstage:request

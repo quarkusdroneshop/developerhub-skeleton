@@ -1,0 +1,363 @@
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: kafka-shop-asite-orders-in
+  description: "Kafka トピック: shop-asite.orders-in（注文チケット）"
+spec:
+  type: asyncapi
+  lifecycle: production
+  owner: ${{ values.owner }}
+  system: ${{ values.system_name }}
+  definition: |
+    asyncapi: 2.6.0
+    info:
+      title: shop-asite.orders-in
+      version: 1.0.0
+      description: ドローンショップ注文チケット受信トピック
+    servers:
+      production:
+        url: shop-cluster-kafka-bootstrap:9092
+        protocol: kafka
+    channels:
+      shop-asite.orders-in:
+        description: 注文チケットを受信するトピック
+        subscribe:
+          operationId: receiveOrder
+          message:
+            name: OrderTicket
+            contentType: application/json
+            payload:
+              type: object
+              properties:
+                orderId:
+                  type: string
+                item:
+                  type: string
+                quantity:
+                  type: integer
+---
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: kafka-shop-bsite-orders-up
+  description: "Kafka トピック: shop-bsite.orders-up（注文ステータス更新）"
+spec:
+  type: asyncapi
+  lifecycle: production
+  owner: ${{ values.owner }}
+  system: ${{ values.system_name }}
+  definition: |
+    asyncapi: 2.6.0
+    info:
+      title: shop-bsite.orders-up
+      version: 1.0.0
+      description: 注文ステータス更新トピック
+    servers:
+      production:
+        url: shop-cluster-kafka-bootstrap:9092
+        protocol: kafka
+    channels:
+      shop-bsite.orders-up:
+        description: 注文ステータス更新を受信するトピック
+        subscribe:
+          operationId: receiveOrderUpdate
+          message:
+            name: OrderUpdate
+            contentType: application/json
+            payload:
+              type: object
+              properties:
+                orderId:
+                  type: string
+                status:
+                  type: string
+---
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: kafka-shop-asite-loyalty-updates
+  description: "Kafka トピック: shop-asite.loyalty-updates（ロイヤリティ更新）"
+spec:
+  type: asyncapi
+  lifecycle: production
+  owner: ${{ values.owner }}
+  system: ${{ values.system_name }}
+  definition: |
+    asyncapi: 2.6.0
+    info:
+      title: shop-asite.loyalty-updates
+      version: 1.0.0
+      description: ロイヤリティポイント更新トピック
+    servers:
+      production:
+        url: shop-cluster-kafka-bootstrap:9092
+        protocol: kafka
+    channels:
+      shop-asite.loyalty-updates:
+        description: ロイヤリティ更新情報を受信するトピック
+        subscribe:
+          operationId: receiveLoyaltyUpdate
+          message:
+            name: LoyaltyUpdate
+            contentType: application/json
+            payload:
+              type: object
+              properties:
+                customerId:
+                  type: string
+                points:
+                  type: integer
+---
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: kafka-shop-asite-inventory-in
+  description: "Kafka トピック: shop-asite.inventory-in（在庫受信）"
+spec:
+  type: asyncapi
+  lifecycle: production
+  owner: ${{ values.owner }}
+  system: ${{ values.system_name }}
+  definition: |
+    asyncapi: 2.6.0
+    info:
+      title: shop-asite.inventory-in
+      version: 1.0.0
+      description: 在庫情報受信トピック
+    servers:
+      production:
+        url: shop-cluster-kafka-bootstrap:9092
+        protocol: kafka
+    channels:
+      shop-asite.inventory-in:
+        description: 在庫情報を受信するトピック
+        subscribe:
+          operationId: receiveInventory
+          message:
+            name: InventoryItem
+            contentType: application/json
+            payload:
+              type: object
+              properties:
+                itemId:
+                  type: string
+                quantity:
+                  type: integer
+---
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: kafka-inventory-out
+  description: "Kafka トピック: inventory-out（在庫応答）"
+spec:
+  type: asyncapi
+  lifecycle: production
+  owner: ${{ values.owner }}
+  system: ${{ values.system_name }}
+  definition: |
+    asyncapi: 2.6.0
+    info:
+      title: inventory-out
+      version: 1.0.0
+      description: 在庫応答送信トピック
+    servers:
+      production:
+        url: shop-cluster-kafka-bootstrap:9092
+        protocol: kafka
+    channels:
+      inventory-out:
+        description: 在庫応答を送信するトピック
+        publish:
+          operationId: sendInventoryResponse
+          message:
+            name: InventoryResponse
+            contentType: application/json
+            payload:
+              type: object
+              properties:
+                itemId:
+                  type: string
+                available:
+                  type: boolean
+---
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: kafka-web-updates
+  description: "Kafka トピック: web-updates（Web画面更新）"
+spec:
+  type: asyncapi
+  lifecycle: production
+  owner: ${{ values.owner }}
+  system: ${{ values.system_name }}
+  definition: |
+    asyncapi: 2.6.0
+    info:
+      title: web-updates
+      version: 1.0.0
+      description: Web画面リアルタイム更新通知トピック
+    servers:
+      production:
+        url: shop-cluster-kafka-bootstrap:9092
+        protocol: kafka
+    channels:
+      web-updates:
+        description: Web画面更新通知を送受信するトピック
+        publish:
+          operationId: sendWebUpdate
+          message:
+            name: WebUpdate
+            contentType: application/json
+            payload:
+              type: object
+              properties:
+                orderId:
+                  type: string
+                status:
+                  type: string
+---
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: kafka-loyalty-updates
+  description: "Kafka トピック: loyalty-updates（ロイヤリティ通知）"
+spec:
+  type: asyncapi
+  lifecycle: production
+  owner: ${{ values.owner }}
+  system: ${{ values.system_name }}
+  definition: |
+    asyncapi: 2.6.0
+    info:
+      title: loyalty-updates
+      version: 1.0.0
+      description: ロイヤリティポイント通知トピック
+    servers:
+      production:
+        url: shop-cluster-kafka-bootstrap:9092
+        protocol: kafka
+    channels:
+      loyalty-updates:
+        description: ロイヤリティポイント通知を受信するトピック
+        subscribe:
+          operationId: receiveLoyaltyNotification
+          message:
+            name: LoyaltyNotification
+            contentType: application/json
+            payload:
+              type: object
+              properties:
+                customerId:
+                  type: string
+                points:
+                  type: integer
+---
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: kafka-shop-bsite-rewards
+  description: "Kafka トピック: shop-bsite.rewards（リワード受信）"
+spec:
+  type: asyncapi
+  lifecycle: production
+  owner: ${{ values.owner }}
+  system: ${{ values.system_name }}
+  definition: |
+    asyncapi: 2.6.0
+    info:
+      title: shop-bsite.rewards
+      version: 1.0.0
+      description: リワードポイント受信トピック
+    servers:
+      production:
+        url: shop-cluster-kafka-bootstrap:9092
+        protocol: kafka
+    channels:
+      shop-bsite.rewards:
+        description: リワードポイントを受信するトピック
+        subscribe:
+          operationId: receiveReward
+          message:
+            name: RewardEvent
+            contentType: application/json
+            payload:
+              type: object
+              properties:
+                orderId:
+                  type: string
+                customerId:
+                  type: string
+                points:
+                  type: integer
+---
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: kafka-qdca10-in
+  description: "Kafka トピック: qdca10-in（QDCA10 処理依頼）"
+spec:
+  type: asyncapi
+  lifecycle: production
+  owner: ${{ values.owner }}
+  system: ${{ values.system_name }}
+  definition: |
+    asyncapi: 2.6.0
+    info:
+      title: qdca10-in
+      version: 1.0.0
+      description: QDCA10 処理依頼トピック
+    servers:
+      production:
+        url: shop-cluster-kafka-bootstrap:9092
+        protocol: kafka
+    channels:
+      qdca10-in:
+        description: QDCA10 処理依頼を送信するトピック
+        publish:
+          operationId: sendQdca10Request
+          message:
+            name: Qdca10Request
+            contentType: application/json
+            payload:
+              type: object
+              properties:
+                orderId:
+                  type: string
+                item:
+                  type: string
+---
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: kafka-qdca10pro-in
+  description: "Kafka トピック: qdca10pro-in（QDCA10Pro 処理依頼）"
+spec:
+  type: asyncapi
+  lifecycle: production
+  owner: ${{ values.owner }}
+  system: ${{ values.system_name }}
+  definition: |
+    asyncapi: 2.6.0
+    info:
+      title: qdca10pro-in
+      version: 1.0.0
+      description: QDCA10Pro 処理依頼トピック
+    servers:
+      production:
+        url: shop-cluster-kafka-bootstrap:9092
+        protocol: kafka
+    channels:
+      qdca10pro-in:
+        description: QDCA10Pro 処理依頼を送信するトピック
+        publish:
+          operationId: sendQdca10proRequest
+          message:
+            name: Qdca10proRequest
+            contentType: application/json
+            payload:
+              type: object
+              properties:
+                orderId:
+                  type: string
+                item:
+                  type: string
