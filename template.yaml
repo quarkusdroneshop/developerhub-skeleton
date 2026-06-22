@@ -295,33 +295,37 @@ spec:
                     value: |
                       #!/bin/bash
                       set -e
-                      oc login --token=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token) \
-                        --server=https://kubernetes.default.svc --insecure-skip-tls-verify=true
                       APP=${{ parameters.app_name }}
-                      NS=quarkusdroneshop-cicd
+                      BUILD_NS=quarkusdroneshop-cicd
+                      DEPLOY_NS=quarkusdroneshop-demo
                       IMAGE=registry.access.redhat.com/ubi8/openjdk-21:1.20
-                      oc delete all -l app=$APP -n $NS || true
-                      oc delete bc/$APP -n $NS || true
-                      oc new-build --binary --name=$APP --docker-image=$IMAGE -n $NS
-                      oc patch bc/$APP -n $NS --type=json \
-                        -p '[{"op":"replace","path":"/spec/strategy/sourceStrategy/from","value":{"kind":"DockerImage","name":"'"$IMAGE"'"}}]'
-                      oc start-build $APP --from-dir=target/quarkus-app/ --follow -n $NS
-                      oc new-app $APP --name=$APP --allow-missing-images -n $NS || true
-                      oc expose svc/$APP -n $NS || true
-                      oc label svc/$APP -n $NS app.kubernetes.io/instance=quarkusdroneshop-$APP app.kubernetes.io/part-of=quarkusdroneshop --overwrite
-                      oc label route/$APP -n $NS app.kubernetes.io/instance=quarkusdroneshop-$APP app.kubernetes.io/part-of=quarkusdroneshop --overwrite || true
-                      KAFKA_URL=$(oc get configmap droneshop-config -n $NS -o jsonpath='{.data.KAFKA_BOOTSTRAP_URLS}')
-                      oc set env deployment/$APP KAFKA_BOOTSTRAP_URLS=$KAFKA_URL JAVA_OPTS_APPEND="-Dquarkus.profile=prod" -n $NS
-                      oc patch deployment/$APP -n $NS --type=json \
-                        -p="[
-                          {\"op\":\"add\",\"path\":\"/metadata/labels/app.kubernetes.io~1name\",\"value\":\"$APP\"},
-                          {\"op\":\"add\",\"path\":\"/metadata/labels/app.kubernetes.io~1part-of\",\"value\":\"quarkusdroneshop\"},
-                          {\"op\":\"add\",\"path\":\"/metadata/labels/app.kubernetes.io~1instance\",\"value\":\"quarkusdroneshop-$APP\"},
-                          {\"op\":\"add\",\"path\":\"/spec/template/metadata/labels/app\",\"value\":\"$APP\"},
-                          {\"op\":\"add\",\"path\":\"/spec/template/metadata/labels/app.kubernetes.io~1instance\",\"value\":\"quarkusdroneshop-$APP\"},
-                          {\"op\":\"add\",\"path\":\"/spec/template/metadata/labels/app.kubernetes.io~1name\",\"value\":\"$APP\"},
-                          {\"op\":\"add\",\"path\":\"/spec/template/metadata/labels/app.kubernetes.io~1part-of\",\"value\":\"quarkusdroneshop\"}
-                        ]"
+                      oc policy add-role-to-user system:image-puller \
+                        system:serviceaccount:${DEPLOY_NS}:default \
+                        -n ${BUILD_NS} 2>/dev/null || true
+                      oc delete bc/$APP is/$APP -n $BUILD_NS || true
+                      oc delete builds -l buildconfig=$APP -n $BUILD_NS || true
+                      oc import-image ubi8-openjdk-21:1.20 \
+                        --from=$IMAGE --confirm -n $BUILD_NS 2>/dev/null || true
+                      oc new-build --binary --name=$APP \
+                        --image-stream=ubi8-openjdk-21:1.20 -n $BUILD_NS
+                      oc start-build $APP --from-dir=target/quarkus-app/ --follow -n $BUILD_NS
+                      oc delete deployment/$APP svc/$APP route/$APP -n $DEPLOY_NS || true
+                      oc new-app $BUILD_NS/$APP --name=$APP --allow-missing-images -n $DEPLOY_NS || true
+                      oc expose svc/$APP -n $DEPLOY_NS || true
+                      oc label deployment/$APP -n $DEPLOY_NS \
+                        app.kubernetes.io/instance=quarkusdroneshop-$APP \
+                        app.kubernetes.io/part-of=quarkusdroneshop \
+                        app.kubernetes.io/name=$APP --overwrite || true
+                      oc label svc/$APP route/$APP -n $DEPLOY_NS \
+                        app.kubernetes.io/instance=quarkusdroneshop-$APP \
+                        app.kubernetes.io/part-of=quarkusdroneshop --overwrite || true
+                      KAFKA_URL=$(oc get configmap droneshop-config -n $DEPLOY_NS \
+                        -o jsonpath='{.data.KAFKA_BOOTSTRAP_URLS}' 2>/dev/null || echo "")
+                      if [ -n "$KAFKA_URL" ]; then
+                        oc set env deployment/$APP \
+                          KAFKA_BOOTSTRAP_URLS=$KAFKA_URL \
+                          JAVA_OPTS_APPEND="-Dquarkus.profile=prod" -n $DEPLOY_NS
+                      fi
                 workspaces:
                   - name: source
                     workspace: shared-workspace
@@ -350,6 +354,8 @@ spec:
             namespace: ${{ parameters.tektonNamespace }}
             labels:
               app: ${{ parameters.app_name }}
+              app.kubernetes.io/instance: quarkusdroneshop-${{ parameters.app_name }}
+              app.kubernetes.io/part-of: quarkusdroneshop
           spec:
             pipelineRef:
               name: build-and-push-quarkusdroneshop-${{ parameters.app_name }}
