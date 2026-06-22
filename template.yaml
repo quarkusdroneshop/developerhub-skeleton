@@ -96,14 +96,14 @@ spec:
       action: http:backstage:request
       input:
         method: PATCH
-        path: /proxy/target-cluster/api/v1/namespaces/${{ parameters.tektonNamespace }}/persistentvolumeclaims/${{ parameters.app_name }}-shared-workspace-pvc?fieldManager=backstage&force=true
+        path: /proxy/target-cluster/api/v1/namespaces/${{ parameters.tektonNamespace }}/persistentvolumeclaims/quarkusdroneshop-${{ parameters.app_name }}-shared-workspace-pvc?fieldManager=backstage&force=true
         headers:
           Content-Type: application/apply-patch+yaml
         body: |
           apiVersion: v1
           kind: PersistentVolumeClaim
           metadata:
-            name: ${{ parameters.app_name }}-shared-workspace-pvc
+            name: quarkusdroneshop-${{ parameters.app_name }}-shared-workspace-pvc
             namespace: ${{ parameters.tektonNamespace }}
           spec:
             accessModes:
@@ -356,7 +356,7 @@ spec:
             workspaces:
               - name: shared-workspace
                 persistentVolumeClaim:
-                  claimName: ${{ parameters.app_name }}-shared-workspace-pvc
+                  claimName: quarkusdroneshop-${{ parameters.app_name }}-shared-workspace-pvc
               - name: dependency-check-cache
                 persistentVolumeClaim:
                   claimName: dependency-check-db
