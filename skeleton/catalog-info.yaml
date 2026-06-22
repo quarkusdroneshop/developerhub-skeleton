@@ -24,3 +24,7 @@ spec:
   lifecycle: production
   owner: ${{ values.owner }}
   system: ${{ values.system_name }}
+  consumesApis:
+    - quarkusdroneshop-${{ values.app_name }}-orders-in
+  providesApis:
+    - quarkusdroneshop-${{ values.app_name }}-rewards

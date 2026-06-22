@@ -1,0 +1,81 @@
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: quarkusdroneshop-${{ values.app_name }}-orders-in
+  description: "shop-asite.orders-in Kafka トピック（注文受信）"
+  annotations:
+    backstage.io/kubernetes-cluster: ${{ values.system_name }}
+spec:
+  type: asyncapi
+  lifecycle: production
+  owner: ${{ values.owner }}
+  system: ${{ values.system_name }}
+  definition: |
+    asyncapi: 2.6.0
+    info:
+      title: quarkusdroneshop orders-in
+      version: 1.0.0
+      description: ドローンショップ注文受信トピック
+    servers:
+      production:
+        url: shop-cluster-kafka-bootstrap:9092
+        protocol: kafka
+    channels:
+      shop-asite.orders-in:
+        description: 注文チケットを受信するトピック
+        subscribe:
+          operationId: receiveOrder
+          summary: 注文受信
+          message:
+            name: OrderTicket
+            contentType: application/json
+            payload:
+              type: object
+              properties:
+                orderId:
+                  type: string
+                item:
+                  type: string
+                quantity:
+                  type: integer
+---
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: quarkusdroneshop-${{ values.app_name }}-rewards
+  description: "rewards Kafka トピック（ポイント送信）"
+  annotations:
+    backstage.io/kubernetes-cluster: ${{ values.system_name }}
+spec:
+  type: asyncapi
+  lifecycle: production
+  owner: ${{ values.owner }}
+  system: ${{ values.system_name }}
+  definition: |
+    asyncapi: 2.6.0
+    info:
+      title: quarkusdroneshop rewards
+      version: 1.0.0
+      description: ドローンショップリワードポイント送信トピック
+    servers:
+      production:
+        url: shop-cluster-kafka-bootstrap:9092
+        protocol: kafka
+    channels:
+      rewards:
+        description: リワードポイントを送信するトピック
+        publish:
+          operationId: sendReward
+          summary: リワード送信
+          message:
+            name: RewardEvent
+            contentType: application/json
+            payload:
+              type: object
+              properties:
+                orderId:
+                  type: string
+                points:
+                  type: integer
+                customerId:
+                  type: string

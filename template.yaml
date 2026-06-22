@@ -338,6 +338,14 @@ spec:
         catalogInfoPath: /catalog-info.yaml
         optional: true
 
+    - id: register-apis
+      name: API カタログ登録
+      action: catalog:register
+      input:
+        repoContentsUrl: https://github.com/${{ parameters.git_owner_name }}/${{ parameters.git_repo_name }}/blob/main
+        catalogInfoPath: /apis.yaml
+        optional: true
+
     - id: create-pipelinerun
       name: PipelineRun実行
       action: http:backstage:request
