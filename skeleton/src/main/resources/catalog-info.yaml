@@ -2,15 +2,25 @@ apiVersion: backstage.io/v1alpha1
 kind: Component
 metadata:
   name: ${{ values.app_name }}
-  description: Rewardのマイクロサービスです
+  description: "quarkusdroneshop-${{ values.app_name }} のマイクロサービスです"
   labels:
-    app: reward
+    app: ${{ values.app_name }}
   annotations:
     backstage.io/kubernetes-id: ${{ values.app_name }}
+    backstage.io/kubernetes-namespace: quarkusdroneshop-demo
+    backstage.io/kubernetes-label-selector: app.kubernetes.io/instance=quarkusdroneshop-${{ values.app_name }}
+    argocd/app-selector: app.kubernetes.io/instance=quarkusdroneshop-${{ values.app_name }}
     tektonci.io/pipeline: ${{ values.app_name }}
+    tektonci.io/pipelineNamespace: quarkusdroneshop-cicd
     tekton.dev/type: pipeline
+    rhdh.redhat.com/tekton-enabled: "true"
 spec:
   type: service
   lifecycle: production
   owner: ${{ values.owner }}
-  system: b-cluster
+  system: ${{ values.system_name }}
+  dependsOn:
+    - resource:quarkusdroneshop-${{ values.app_name }}/kafka-cluster
+    - resource:quarkusdroneshop-${{ values.app_name }}/postgres-cluster
+  providedApis:
+    - ${{ values.app_name }}-api

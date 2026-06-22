@@ -23,3 +23,8 @@ spec:
   lifecycle: production
   owner: ${{ values.owner }}
   system: ${{ values.system_name }}
+  dependsOn:
+    - resource:quarkusdroneshop-${{ values.app_name }}/kafka-cluster
+    - resource:quarkusdroneshop-${{ values.app_name }}/postgres-cluster
+  providedApis:
+    - ${{ values.app_name }}-api
