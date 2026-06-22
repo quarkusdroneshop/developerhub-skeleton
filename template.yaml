@@ -365,9 +365,5 @@ spec:
     links:
       - title: GitHub Repository
         url: ${{ steps['publish'].output.remoteUrl }}
-      - title: カタログで開く
-        icon: catalog
-        url: /catalog/default/component/${{ parameters.app_name }}
-
       - title: OpenShift Pipelines
         url: https://console-openshift-console.${{ parameters.clusterDomain }}/k8s/ns/${{ parameters.tektonNamespace }}/tekton.dev~v1~PipelineRun
