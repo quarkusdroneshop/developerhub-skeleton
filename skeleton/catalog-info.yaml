@@ -20,7 +20,7 @@ metadata:
     janus-idp.io/tekton: "true"
     rhdh.redhat.com/tekton-enabled: "true"
 spec:
-  type: service
+  type: microservice
   lifecycle: production
   owner: ${{ values.owner }}
   system: ${{ values.system_name }}
