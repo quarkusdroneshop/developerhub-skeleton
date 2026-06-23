@@ -39,6 +39,21 @@ spec:
             - B クラスター
             - C クラスター
 
+    - title: Kafka トピック設定
+      properties:
+        kafka_topic_orders_in_prod:
+          type: string
+          title: 受信トピック名（prod）
+          description: "本番環境で受信する Kafka トピック名（例: shop-asite.orders-in）"
+        kafka_topic_orders_in_dev:
+          type: string
+          title: 受信トピック名（dev）
+          description: "開発環境で受信する Kafka トピック名（例: orders-in）"
+        kafka_topic_rewards:
+          type: string
+          title: 送信トピック名（rewards）
+          description: "リワードイベントを送信する Kafka トピック名（例: rewards）"
+
     - title: Tekton情報
       required: [tektonNamespace, clusterDomain]
       properties:
@@ -68,6 +83,9 @@ spec:
           owner: ${{ parameters.owner }}
           system_name: ${{ parameters.system_name }}
           image_tag: ${{ parameters.image_tag }}
+          kafka_topic_orders_in_prod: ${{ parameters.kafka_topic_orders_in_prod }}
+          kafka_topic_orders_in_dev: ${{ parameters.kafka_topic_orders_in_dev }}
+          kafka_topic_rewards: ${{ parameters.kafka_topic_rewards }}
 
     - id: publish
       name: GitHubへPush
