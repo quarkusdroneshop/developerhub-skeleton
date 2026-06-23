@@ -7698,6 +7698,24 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@internal/plugin-test-report@workspace:plugins/test-report":
+  version: 0.0.0-use.local
+  resolution: "@internal/plugin-test-report@workspace:plugins/test-report"
+  dependencies:
+    "@backstage/catalog-model": "npm:1.7.7"
+    "@backstage/cli": "npm:0.36.0"
+    "@backstage/core-components": "npm:0.18.8"
+    "@backstage/core-plugin-api": "npm:1.12.4"
+    "@backstage/plugin-catalog-react": "npm:2.1.1"
+    "@types/react": "npm:^18"
+    "@types/react-dom": "npm:^18"
+    prettier: "npm:3.8.1"
+    react: "npm:^18.0.2"
+    react-dom: "npm:^18.0.2"
+    typescript: "npm:5.9.3"
+  languageName: unknown
+  linkType: soft
+
 "@internationalized/date@npm:^3.12.0, @internationalized/date@npm:^3.12.1, @internationalized/date@npm:^3.12.2":
   version: 3.12.2
   resolution: "@internationalized/date@npm:3.12.2"
@@ -32939,7 +32957,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-dom@npm:18.3.1":
+"react-dom@npm:18.3.1, react-dom@npm:^18.0.2":
   version: 18.3.1
   resolution: "react-dom@npm:18.3.1"
   dependencies:
@@ -33489,7 +33507,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react@npm:18.3.1":
+"react@npm:18.3.1, react@npm:^18.0.2":
   version: 18.3.1
   resolution: "react@npm:18.3.1"
   dependencies:

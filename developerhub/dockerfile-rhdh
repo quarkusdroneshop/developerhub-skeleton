@@ -41,6 +41,10 @@ RUN mkdir -p /opt/backstage/node_modules/@internal \
  && ln -sfn /opt/backstage/plugins/scalprum-backend \
     /opt/backstage/node_modules/@internal/plugin-scalprum-backend
 
+# test-report Dynamic Plugin をイメージに組み込む
+# (dynamic-plugins-root はボリュームマウントなので dynamic-plugins/dist/ に配置する)
+COPY plugins/test-report/dist-dynamic /opt/app-root/src/dynamic-plugins/dist/internal-plugin-test-report
+
 RUN ls /opt/backstage/node_modules/@backstage/backend-defaults/package.json \
  && echo "=== @backstage/backend-defaults OK ===" \
  && ls /opt/backstage/node_modules/@internal/
