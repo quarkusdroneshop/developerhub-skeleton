@@ -7617,6 +7617,23 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@internal/plugin-data-catalog@workspace:plugins/data-catalog":
+  version: 0.0.0-use.local
+  resolution: "@internal/plugin-data-catalog@workspace:plugins/data-catalog"
+  dependencies:
+    "@backstage/catalog-model": "npm:1.7.7"
+    "@backstage/cli": "npm:0.36.0"
+    "@backstage/core-components": "npm:0.18.8"
+    "@backstage/core-plugin-api": "npm:1.12.4"
+    "@backstage/plugin-catalog-react": "npm:2.1.1"
+    "@types/react": "npm:^18"
+    "@types/react-dom": "npm:^18"
+    react: "npm:^18.0.2"
+    react-dom: "npm:^18.0.2"
+    typescript: "npm:5.9.3"
+  languageName: unknown
+  linkType: soft
+
 "@internal/plugin-dynamic-plugins-info-backend@npm:*, @internal/plugin-dynamic-plugins-info-backend@workspace:plugins/dynamic-plugins-info-backend":
   version: 0.0.0-use.local
   resolution: "@internal/plugin-dynamic-plugins-info-backend@workspace:plugins/dynamic-plugins-info-backend"
@@ -13359,6 +13376,7 @@ __metadata:
 "@rollup/rollup-darwin-arm64@npm:4.62.0":
   version: 4.62.0
   resolution: "@rollup/rollup-darwin-arm64@npm:4.62.0"
+  checksum: 10c0/463e3292487992a01585d614f02281b785169a7368260fd874c963e9755ecba50ada3daad02f9ddf88f99c08ffd08d70aadb159c4d843bfe0e161b54406abc86
   conditions: os=darwin & cpu=arm64
   languageName: node
   linkType: hard
@@ -34405,6 +34423,7 @@ __metadata:
     "@ianvs/prettier-plugin-sort-imports": "npm:4.7.1"
     "@jest/environment-jsdom-abstract": "npm:30.3.0"
     "@manypkg/cli": "npm:0.25.1"
+    "@rollup/rollup-darwin-arm64": "npm:4.62.0"
     "@types/jest": "npm:30.0.0"
     glob: "npm:11.1.0"
     husky: "npm:8.0.3"
