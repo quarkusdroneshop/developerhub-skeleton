@@ -57,11 +57,15 @@ spec:
     - title: Tekton情報
       required: [tektonNamespace, clusterDomain]
       properties:
-        tektonNamespace: { type: string, default: quarkusdroneshop-cicd }
+        tektonNamespace:
+          type: string
+          title: Tekton Namespace
+          default: quarkusdroneshop-cicd
         clusterDomain:
           type: string
+          title: クラスタードメイン
           description: apps.<cluster-domain>
-          default: apps.ocp.49dgc.sandbox1447.opentlc.com
+          default: apps.ocp.hfczn.sandbox2320.opentlc.com
 
     - title: 所有者情報
       required: [owner]
