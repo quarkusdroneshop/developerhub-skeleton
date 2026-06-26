@@ -10,7 +10,13 @@ RUN microdnf install -y \
     jq \
     tar \
     gzip \
+    python3 \
+    python3-pip \
  && microdnf clean all
+
+# TechDocs ローカルジェネレータ (mkdocs) のインストール
+RUN pip3 install --no-cache-dir mkdocs-techdocs-core \
+ && mkdocs --version
 
 RUN mkdir -p /opt/backstage
 

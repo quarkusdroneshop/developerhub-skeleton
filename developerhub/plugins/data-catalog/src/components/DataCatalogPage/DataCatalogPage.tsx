@@ -1,8 +1,17 @@
 import React from 'react';
 import { useEntity } from '@backstage/plugin-catalog-react';
+import { useApi, configApiRef } from '@backstage/core-plugin-api';
 
-const OPENMETADATA_DIRECT = 'http://openmetadata-openmetadata.apps.ocp.hfczn.sandbox2320.opentlc.com';
-const OPENMETADATA_PROXY = 'https://om-proxy-openmetadata.apps.ocp.hfczn.sandbox2320.opentlc.com';
+function getOpenMetadataUrls(appBaseUrl: string): { direct: string; proxy: string } {
+  // app.baseUrl = https://backstage-developer-hub-<ns>.<apps-domain>
+  // → OpenMetadata direct = http://openmetadata-openmetadata.<apps-domain>
+  // → OpenMetadata proxy  = https://om-proxy-openmetadata.<apps-domain>
+  const appsHost = appBaseUrl.replace(/^https?:\/\/[^.]+\./, '');
+  return {
+    direct: `http://openmetadata-openmetadata.${appsHost}`,
+    proxy:  `https://om-proxy-openmetadata.${appsHost}`,
+  };
+}
 
 const DB_PATHS: Record<string, string> = {
   'a-cluster': '/service/databaseServices/external-shop-cluster-postgres-asite%3A5432?showDeletedTables=false',
@@ -16,7 +25,8 @@ const KAFKA_SERVICE: Record<string, string> = {
   'c-cluster': 'external-shop-cluster-kafka-csite%3A9094',
 };
 
-function getUrls(entity: any): { iframeUrl: string; directUrl: string } {
+function getUrls(entity: any, appBaseUrl: string): { iframeUrl: string; directUrl: string } {
+  const { direct: OPENMETADATA_DIRECT, proxy: OPENMETADATA_PROXY } = getOpenMetadataUrls(appBaseUrl);
   const annotation = entity.metadata.annotations?.['openmetadata/explore-url'];
   const system: string = entity.spec?.system ?? 'a-cluster';
   const type: string = entity.spec?.type ?? '';
@@ -41,7 +51,9 @@ function getUrls(entity: any): { iframeUrl: string; directUrl: string } {
 
 export const DataCatalogContent = () => {
   const { entity } = useEntity();
-  const { iframeUrl, directUrl } = getUrls(entity);
+  const config = useApi(configApiRef);
+  const appBaseUrl = config.getString('app.baseUrl');
+  const { iframeUrl, directUrl } = getUrls(entity, appBaseUrl);
 
   return (
     <div style={{ position: 'relative' }}>
