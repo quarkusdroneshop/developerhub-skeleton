@@ -1,16 +1,116 @@
 apiVersion: backstage.io/v1alpha1
 kind: Component
 metadata:
-  name: ${{ values.app_name }}
-  description: Rewardのマイクロサービスです
+  name: quarkusdroneshop-${{ values.app_name }}
+  description: "quarkusdroneshop-${{ values.app_name }} のマイクロサービスです"
+  tags:
+    - ${{ values.image_tag }}
+    - ${{ values.system_name }}
   labels:
-    app: reward
+    app: ${{ values.app_name }}
   annotations:
-    backstage.io/kubernetes-id: ${{ values.app_name }}
-    tektonci.io/pipeline: ${{ values.app_name }}
+    backstage.io/kubernetes-id: quarkusdroneshop-${{ values.app_name }}
+    backstage.io/kubernetes-cluster: ${{ values.system_name }}
+    backstage.io/kubernetes-label-selector: app.kubernetes.io/instance=quarkusdroneshop-${{ values.app_name }}
+    argocd/app-selector: app.kubernetes.io/instance=quarkusdroneshop-${{ values.app_name }}
+    tektonci.io/pipeline: build-and-push-quarkusdroneshop-${{ values.app_name }}
+    tektonci.io/pipelineNamespace: quarkusdroneshop-cicd
     tekton.dev/type: pipeline
+    tekton.dev/cicd: "true"
+    janus-idp.io/tekton: "true"
+    rhdh.redhat.com/tekton-enabled: "true"
 spec:
-  type: service
+  type: microservice
   lifecycle: production
   owner: ${{ values.owner }}
-  system: b-cluster
+  system: ${{ values.system_name }}
+  dependsOn:
+    - resource:shop-cluster-kafka
+    - resource:shop-asite-orders-in
+    - resource:shop-rewards
+  consumesApis:
+    - quarkusdroneshop-${{ values.app_name }}-orders-in
+  providesApis:
+    - quarkusdroneshop-${{ values.app_name }}-rewards
+---
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: quarkusdroneshop-${{ values.app_name }}-orders-in
+  description: "shop-asite.orders-in Kafka トピック（注文受信）"
+  annotations:
+    backstage.io/kubernetes-cluster: ${{ values.system_name }}
+spec:
+  type: asyncapi
+  lifecycle: production
+  owner: ${{ values.owner }}
+  system: ${{ values.system_name }}
+  definition: |
+    asyncapi: 2.6.0
+    info:
+      title: quarkusdroneshop orders-in
+      version: 1.0.0
+      description: ドローンショップ注文受信トピック
+    servers:
+      production:
+        url: shop-cluster-kafka-bootstrap:9092
+        protocol: kafka
+    channels:
+      shop-asite.orders-in:
+        description: 注文チケットを受信するトピック
+        subscribe:
+          operationId: receiveOrder
+          summary: 注文受信
+          message:
+            name: OrderTicket
+            contentType: application/json
+            payload:
+              type: object
+              properties:
+                orderId:
+                  type: string
+                item:
+                  type: string
+                quantity:
+                  type: integer
+---
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: quarkusdroneshop-${{ values.app_name }}-rewards
+  description: "rewards Kafka トピック（ポイント送信）"
+  annotations:
+    backstage.io/kubernetes-cluster: ${{ values.system_name }}
+spec:
+  type: asyncapi
+  lifecycle: production
+  owner: ${{ values.owner }}
+  system: ${{ values.system_name }}
+  definition: |
+    asyncapi: 2.6.0
+    info:
+      title: quarkusdroneshop rewards
+      version: 1.0.0
+      description: ドローンショップリワードポイント送信トピック
+    servers:
+      production:
+        url: shop-cluster-kafka-bootstrap:9092
+        protocol: kafka
+    channels:
+      rewards:
+        description: リワードポイントを送信するトピック
+        publish:
+          operationId: sendReward
+          summary: リワード送信
+          message:
+            name: RewardEvent
+            contentType: application/json
+            payload:
+              type: object
+              properties:
+                orderId:
+                  type: string
+                points:
+                  type: integer
+                customerId:
+                  type: string

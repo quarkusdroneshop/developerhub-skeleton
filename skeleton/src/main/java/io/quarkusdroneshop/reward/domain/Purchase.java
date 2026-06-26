@@ -61,8 +61,11 @@ public class Purchase implements OrderProcessingResult {
      * rewardsId が設定されている注文で合計商品数が閾値以上の場合、注文合計金額の10%をリワードポイントとして付与する。
      */
     public void processRewards(OrderBatch batch) {
-        if (batch.rewardsId == null || batch.rewardsId.isEmpty()) {
-            logger.info("No rewardsId in order {}, skipping reward", batch.orderId);
+        String customerId = (batch.rewardsId != null && !batch.rewardsId.isEmpty())
+            ? batch.rewardsId
+            : batch.loyaltyMemberId;
+        if (customerId == null || customerId.isEmpty()) {
+            logger.info("No rewardsId/loyaltyMemberId in order {}, skipping reward", batch.orderId);
             return;
         }
 
@@ -88,11 +91,11 @@ public class Purchase implements OrderProcessingResult {
         }
 
         BigDecimal rewardPoints = orderTotal.multiply(REWARD_RATE).setScale(2, RoundingMode.HALF_UP);
-        RewardEvent rewardEvent = new RewardEvent(batch.rewardsId, batch.orderId, rewardPoints);
+        RewardEvent rewardEvent = new RewardEvent(customerId, batch.orderId, rewardPoints);
         rewardEmitter.send(rewardEvent);
 
         logger.info("Reward issued — customer: {}, items: {}, orderTotal: {}, rewardPoints: {} ({}%)",
-            batch.rewardsId, totalItems, orderTotal, rewardPoints,
+            customerId, totalItems, orderTotal, rewardPoints,
             REWARD_RATE.multiply(BigDecimal.valueOf(100)).intValue());
     }
 

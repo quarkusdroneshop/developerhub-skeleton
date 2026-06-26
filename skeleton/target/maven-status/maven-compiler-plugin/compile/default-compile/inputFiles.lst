@@ -11,3 +11,4 @@
 /Users/nmushino/Development/kafka-workshop/quarkusdroneshop/developerhub-skeleton/skeleton/src/main/java/io/quarkusdroneshop/reward/domain/Purchase.java
 /Users/nmushino/Development/kafka-workshop/quarkusdroneshop/developerhub-skeleton/skeleton/src/main/java/io/quarkusdroneshop/reward/infrastructure/KafkaService.java
 /Users/nmushino/Development/kafka-workshop/quarkusdroneshop/developerhub-skeleton/skeleton/src/main/java/io/quarkusdroneshop/reward/infrastructure/OrderTicketDeserializer.java
+/Users/nmushino/Development/kafka-workshop/quarkusdroneshop/developerhub-skeleton/skeleton/src/main/java/io/quarkusdroneshop/reward/infrastructure/RewardEventDeserializer.java
