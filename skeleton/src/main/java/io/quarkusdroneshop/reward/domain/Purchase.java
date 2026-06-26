@@ -1,6 +1,5 @@
 package io.quarkusdroneshop.reward.domain;
 
-import io.quarkusdroneshop.domain.Item;
 import io.quarkusdroneshop.domain.valueobjects.*;
 
 import org.eclipse.microprofile.reactive.messaging.Channel;
@@ -14,6 +13,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.net.InetAddress;
 import java.time.Instant;
 import java.util.*;
@@ -22,6 +22,9 @@ import java.util.*;
 public class Purchase implements OrderProcessingResult {
 
     static final Logger logger = LoggerFactory.getLogger(Purchase.class);
+
+    private static final int REWARD_THRESHOLD = 5;
+    private static final BigDecimal REWARD_RATE = BigDecimal.valueOf(0.10);
 
     private OrderUp orderUp;
     private boolean isEightySixed;
@@ -50,57 +53,36 @@ public class Purchase implements OrderProcessingResult {
             Instant.now(),
             madeBy
         );
-
         this.isEightySixed = false;
         return this;
     }
 
-    public void sendRewardIfEligible(String name, String orderId, int totalCount, OrderBatch batch) {
-        if (totalCount < 5) return;
+    /**
+     * 1オーダー内の合計商品数が5以上の顧客に、注文合計金額の10%をリワードポイントとして付与する。
+     */
+    public void processRewards(OrderBatch batch) {
+        Map<String, Integer> itemCountByCustomer = new HashMap<>();
+        Map<String, BigDecimal> totalByCustomer = new HashMap<>();
 
-        BigDecimal qdca10Total = batch.qdca10LineItems.stream()
-            .filter(item -> name.equals(item.name))
-            .map(item -> item.price)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
+        for (OrderBatch.LineItem item : batch.qdca10LineItems) {
+            itemCountByCustomer.merge(item.name, 1, Integer::sum);
+            totalByCustomer.merge(item.name, item.price, BigDecimal::add);
+        }
+        for (OrderBatch.LineItem item : batch.qdca10proLineItems) {
+            itemCountByCustomer.merge(item.name, 1, Integer::sum);
+            totalByCustomer.merge(item.name, item.price, BigDecimal::add);
+        }
 
-        BigDecimal qdca10proTotal = batch.qdca10proLineItems.stream()
-            .filter(item -> name.equals(item.name))
-            .map(item -> item.price)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
+        itemCountByCustomer.forEach((name, count) -> {
+            if (count >= REWARD_THRESHOLD) {
+                BigDecimal orderTotal = totalByCustomer.getOrDefault(name, BigDecimal.ZERO);
+                BigDecimal rewardPoints = orderTotal.multiply(REWARD_RATE).setScale(2, RoundingMode.HALF_UP);
 
-        BigDecimal qdca10Points = qdca10Total.multiply(BigDecimal.valueOf(0.10));
-        BigDecimal qdca10proPoints = qdca10proTotal.multiply(BigDecimal.valueOf(0.15));
-        BigDecimal rewardPoints = qdca10Points.add(qdca10proPoints);
+                RewardEvent rewardEvent = new RewardEvent(name, batch.orderId, rewardPoints);
+                rewardEmitter.send(rewardEvent);
 
-        RewardEvent rewardEvent = new RewardEvent(name, orderId, rewardPoints);
-        rewardEmitter.send(rewardEvent);
-
-        logger.info("Reward sent to {}: {} pts (10%: {}, 15%: {})",
-            name, rewardPoints, qdca10Points, qdca10proPoints);
-    }
-
-    public void processRewards(OrderBatch batch, Map<String, Integer> localCounter, Map<String, Integer> purchaseCount) {
-        localCounter.forEach((name, localCount) -> {
-            int total = purchaseCount.merge(name, localCount, Integer::sum);
-    
-            if (total >= 5) {
-                BigDecimal qdca10Total = batch.qdca10LineItems.stream()
-                    .filter(item -> name.equals(item.name))
-                    .map(item -> item.price)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
-    
-                BigDecimal qdca10proTotal = batch.qdca10proLineItems.stream()
-                    .filter(item -> name.equals(item.name))
-                    .map(item -> item.price)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
-    
-                BigDecimal qdca10Points = qdca10Total.multiply(BigDecimal.valueOf(0.10));
-                BigDecimal qdca10proPoints = qdca10proTotal.multiply(BigDecimal.valueOf(0.15));
-                BigDecimal rewardPoints = qdca10Points.add(qdca10proPoints);
-    
-                rewardEmitter.send(new RewardEvent(name, batch.orderId, rewardPoints));
-                logger.info("Reward sent to {}: {} pts (10%: {}, 15%: {})",
-                    name, rewardPoints, qdca10Points, qdca10proPoints);
+                logger.info("Reward issued — customer: {}, items: {}, orderTotal: {}, rewardPoints: {} ({}%)",
+                    name, count, orderTotal, rewardPoints, REWARD_RATE.multiply(BigDecimal.valueOf(100)).intValue());
             }
         });
     }

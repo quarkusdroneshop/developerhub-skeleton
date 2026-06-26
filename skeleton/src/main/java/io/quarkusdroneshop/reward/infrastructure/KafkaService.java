@@ -1,7 +1,6 @@
 package io.quarkusdroneshop.reward.infrastructure;
 
 import io.quarkus.runtime.annotations.RegisterForReflection;
-import io.quarkusdroneshop.domain.Item;
 import io.quarkusdroneshop.domain.valueobjects.*;
 import io.quarkusdroneshop.reward.domain.OrderBatch;
 import io.quarkusdroneshop.reward.domain.Purchase;
@@ -12,10 +11,8 @@ import org.slf4j.LoggerFactory;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import java.math.BigDecimal;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.stream.Stream;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 @ApplicationScoped
 @RegisterForReflection
@@ -23,48 +20,32 @@ public class KafkaService {
 
     Logger logger = LoggerFactory.getLogger(KafkaService.class);
 
-    // 累積購入数
-    private final Map<String, Integer> purchaseCount = new ConcurrentHashMap<>();
-
     @Inject Purchase purchase;
-
-    @Inject @Channel("rewards")
-    Emitter<RewardEvent> rewardEmitter;
 
     @Incoming("orders-in")
     @Acknowledgment(Acknowledgment.Strategy.PRE_PROCESSING)
     public CompletionStage<Void> onOrderIn(OrderBatch batch) {
         return CompletableFuture.runAsync(() -> {
-            logger.info("Received OrderBatch: {}", batch);
+            logger.info("Received OrderBatch: orderId={}, qdca10Items={}, qdca10proItems={}",
+                batch.orderId,
+                batch.qdca10LineItems != null ? batch.qdca10LineItems.size() : 0,
+                batch.qdca10proLineItems != null ? batch.qdca10proLineItems.size() : 0);
 
-            // 今回のバッチでのカウント
-            Map<String, Integer> localCounter = new HashMap<>();
+            purchase.processRewards(batch);
+        });
+    }
 
-            Stream.concat(
-                batch.qdca10LineItems.stream().map(item -> Map.entry(item, false)),
-                batch.qdca10proLineItems.stream().map(item -> Map.entry(item, true))
-            ).forEach(entry -> {
-                OrderBatch.LineItem lineItem = entry.getKey();
-                boolean isPro = entry.getValue();
-
-                OrderIn reconstructedOrder = new OrderIn(
-                    batch.orderId,
-                    null,
-                    Item.valueOf(lineItem.item),
-                    lineItem.name,
-                    lineItem.price,
-                    batch.orderSource
-                );
-
-                OrderProcessingResult result = purchase.make(reconstructedOrder);
-
-                if (!result.isEightySixed()) {
-                    localCounter.merge(reconstructedOrder.getName(), 1, Integer::sum);
-                }
-            });
-
-            // リワード処理（Purchase に委譲）
-            purchase.processRewards(batch, localCounter, purchaseCount);
+    /**
+     * rewards トピックからイベントを受信してリワード情報を表示する。
+     */
+    @Incoming("rewards-display")
+    @Acknowledgment(Acknowledgment.Strategy.PRE_PROCESSING)
+    public CompletionStage<Void> onReward(RewardEvent rewardEvent) {
+        return CompletableFuture.runAsync(() -> {
+            logger.info("*** REWARD NOTIFICATION *** customer: {}, orderId: {}, rewardPoints: {}",
+                rewardEvent.getCustomerName(),
+                rewardEvent.getOrderId(),
+                rewardEvent.getRewardAmount());
         });
     }
 }
