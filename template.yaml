@@ -61,7 +61,7 @@ spec:
         clusterDomain:
           type: string
           description: apps.<cluster-domain>
-          default: {{ ocp_apps_domain }}
+          default: apps.ocp.49dgc.sandbox1447.opentlc.com
 
     - title: 所有者情報
       required: [owner]
