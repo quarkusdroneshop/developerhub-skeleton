@@ -73,16 +73,20 @@ public class Purchase implements OrderProcessingResult {
             totalByCustomer.merge(item.name, item.price, BigDecimal::add);
         }
 
+        String rewardsId = (batch.rewardsId != null && !batch.rewardsId.isEmpty())
+            ? batch.rewardsId : null;
+
         itemCountByCustomer.forEach((name, count) -> {
             if (count >= REWARD_THRESHOLD) {
                 BigDecimal orderTotal = totalByCustomer.getOrDefault(name, BigDecimal.ZERO);
                 BigDecimal rewardPoints = orderTotal.multiply(REWARD_RATE).setScale(2, RoundingMode.HALF_UP);
 
-                RewardEvent rewardEvent = new RewardEvent(name, batch.orderId, rewardPoints);
+                String customerName = (rewardsId != null) ? rewardsId : name;
+                RewardEvent rewardEvent = new RewardEvent(customerName, batch.orderId, rewardPoints);
                 rewardEmitter.send(rewardEvent);
 
                 logger.info("Reward issued — customer: {}, items: {}, orderTotal: {}, rewardPoints: {} ({}%)",
-                    name, count, orderTotal, rewardPoints, REWARD_RATE.multiply(BigDecimal.valueOf(100)).intValue());
+                    customerName, count, orderTotal, rewardPoints, REWARD_RATE.multiply(BigDecimal.valueOf(100)).intValue());
             }
         });
     }

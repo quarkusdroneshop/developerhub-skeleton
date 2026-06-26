@@ -23,6 +23,7 @@ public class OrderBatch {
     public String orderSource;
     public String location;
     public String loyaltyMemberId;
+    public String rewardsId;
 
     public List<LineItem> qdca10LineItems;
     public List<LineItem> qdca10proLineItems;
