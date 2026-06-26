@@ -58,37 +58,42 @@ public class Purchase implements OrderProcessingResult {
     }
 
     /**
-     * 1オーダー内の合計商品数が5以上の顧客に、注文合計金額の10%をリワードポイントとして付与する。
+     * rewardsId が設定されている注文で合計商品数が閾値以上の場合、注文合計金額の10%をリワードポイントとして付与する。
      */
     public void processRewards(OrderBatch batch) {
-        Map<String, Integer> itemCountByCustomer = new HashMap<>();
-        Map<String, BigDecimal> totalByCustomer = new HashMap<>();
-
-        for (OrderBatch.LineItem item : batch.qdca10LineItems) {
-            itemCountByCustomer.merge(item.name, 1, Integer::sum);
-            totalByCustomer.merge(item.name, item.price, BigDecimal::add);
-        }
-        for (OrderBatch.LineItem item : batch.qdca10proLineItems) {
-            itemCountByCustomer.merge(item.name, 1, Integer::sum);
-            totalByCustomer.merge(item.name, item.price, BigDecimal::add);
+        if (batch.rewardsId == null || batch.rewardsId.isEmpty()) {
+            logger.info("No rewardsId in order {}, skipping reward", batch.orderId);
+            return;
         }
 
-        String rewardsId = (batch.rewardsId != null && !batch.rewardsId.isEmpty())
-            ? batch.rewardsId : null;
+        int totalItems = (batch.qdca10LineItems != null ? batch.qdca10LineItems.size() : 0)
+                       + (batch.qdca10proLineItems != null ? batch.qdca10proLineItems.size() : 0);
 
-        itemCountByCustomer.forEach((name, count) -> {
-            if (count >= REWARD_THRESHOLD) {
-                BigDecimal orderTotal = totalByCustomer.getOrDefault(name, BigDecimal.ZERO);
-                BigDecimal rewardPoints = orderTotal.multiply(REWARD_RATE).setScale(2, RoundingMode.HALF_UP);
+        if (totalItems < REWARD_THRESHOLD) {
+            logger.info("Order {} has {} items, threshold is {}, no reward issued",
+                batch.orderId, totalItems, REWARD_THRESHOLD);
+            return;
+        }
 
-                String customerName = (rewardsId != null) ? rewardsId : name;
-                RewardEvent rewardEvent = new RewardEvent(customerName, batch.orderId, rewardPoints);
-                rewardEmitter.send(rewardEvent);
-
-                logger.info("Reward issued — customer: {}, items: {}, orderTotal: {}, rewardPoints: {} ({}%)",
-                    customerName, count, orderTotal, rewardPoints, REWARD_RATE.multiply(BigDecimal.valueOf(100)).intValue());
+        BigDecimal orderTotal = BigDecimal.ZERO;
+        if (batch.qdca10LineItems != null) {
+            for (OrderBatch.LineItem item : batch.qdca10LineItems) {
+                orderTotal = orderTotal.add(item.price);
             }
-        });
+        }
+        if (batch.qdca10proLineItems != null) {
+            for (OrderBatch.LineItem item : batch.qdca10proLineItems) {
+                orderTotal = orderTotal.add(item.price);
+            }
+        }
+
+        BigDecimal rewardPoints = orderTotal.multiply(REWARD_RATE).setScale(2, RoundingMode.HALF_UP);
+        RewardEvent rewardEvent = new RewardEvent(batch.rewardsId, batch.orderId, rewardPoints);
+        rewardEmitter.send(rewardEvent);
+
+        logger.info("Reward issued — customer: {}, items: {}, orderTotal: {}, rewardPoints: {} ({}%)",
+            batch.rewardsId, totalItems, orderTotal, rewardPoints,
+            REWARD_RATE.multiply(BigDecimal.valueOf(100)).intValue());
     }
 
     @Override
