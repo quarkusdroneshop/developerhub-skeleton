@@ -130,16 +130,3 @@ spec:
   system: ${{ values.system_name }}
   dependsOn:
     - resource:shop-cluster-kafka
----
-apiVersion: backstage.io/v1alpha1
-kind: Resource
-metadata:
-  name: droneshopdb-postgresql
-  description: "quarkusdroneshop PostgreSQL データベース (droneshopdb)"
-  annotations:
-    backstage.io/kubernetes-cluster: ${{ values.system_name }}
-spec:
-  type: database
-  lifecycle: production
-  owner: ${{ values.owner }}
-  system: ${{ values.system_name }}
