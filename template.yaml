@@ -392,7 +392,7 @@ spec:
                   - name: source
                     workspace: shared-workspace
 
-              - name: maven-e2e-test
+              - name: spotbugs-run
                 onError: continue
                 runAfter:
                   - maven-unit-test
@@ -403,7 +403,23 @@ spec:
                   - name: CONTEXT_DIR
                     value: .
                   - name: GOALS
-                    value: "verify -DskipTests"
+                    value: "spotbugs:spotbugs"
+                workspaces:
+                  - name: source
+                    workspace: shared-workspace
+
+              - name: maven-e2e-test
+                onError: continue
+                runAfter:
+                  - spotbugs-run
+                taskRef:
+                  kind: Task
+                  name: maven-no-settings21
+                params:
+                  - name: CONTEXT_DIR
+                    value: .
+                  - name: GOALS
+                    value: "test-compile failsafe:integration-test failsafe:verify"
                 workspaces:
                   - name: source
                     workspace: shared-workspace
