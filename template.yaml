@@ -377,7 +377,7 @@ spec:
                   - name: source
                     workspace: shared-workspace
 
-              - name: maven-run
+              - name: maven-unit-test
                 runAfter:
                   - fetch-repository
                 taskRef:
@@ -387,25 +387,42 @@ spec:
                   - name: CONTEXT_DIR
                     value: .
                   - name: GOALS
-                    value: "clean verify"
+                    value: "clean test"
+                workspaces:
+                  - name: source
+                    workspace: shared-workspace
+
+              - name: maven-e2e-test
+                onError: continue
+                runAfter:
+                  - maven-unit-test
+                taskRef:
+                  kind: Task
+                  name: maven-no-settings21
+                params:
+                  - name: CONTEXT_DIR
+                    value: .
+                  - name: GOALS
+                    value: "verify -DskipTests"
                 workspaces:
                   - name: source
                     workspace: shared-workspace
 
               # ═══════════════════════════════════════════════════════════════
-              # Stage 3: テスト結果集計（maven-run 完了後）
+              # Stage 3: テスト結果集計（maven-e2e-test 完了後）
               #   この時点で並列実行した各ツールの出力ファイルが揃っている:
-              #   - target/surefire-reports/       (maven-run)
+              #   - target/surefire-reports/       (maven-unit-test)
+              #   - target/failsafe-reports/       (maven-e2e-test / Playwright)
               #   - target/gitleaks-report.json    (gitleaks-scan)
               #   - target/semgrep-reports/        (semgrep-scan)
               #   - target/checkstyle-result.xml   (checkstyle-run)
               #   - target/pmd.xml                 (pmd-run)
-              #   - target/trivy.txt               (trivy-scan: pom.xmlスキャンなので早期完了)
+              #   - target/trivy.txt               (trivy-scan)
               # ═══════════════════════════════════════════════════════════════
 
               - name: print-csv-table
                 runAfter:
-                  - maven-run
+                  - maven-e2e-test
                 onError: continue
                 taskRef:
                   kind: Task
