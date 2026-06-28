@@ -19,13 +19,16 @@ spec:
         git_owner_name:
           type: string
           title: GitHub オーナー名
+          description: GitHubのオーナー名
         git_repo_name:
           type: string
           title: GitHub リポジトリ名
+          description: 利用しているGitHubのリポジトリを記載
         image_tag:
           type: string
           title: イメージ TAG
           default: latest
+          description: 対象のイメージTAGを入力
         system_name:
           type: string
           title: システム名
@@ -54,6 +57,40 @@ spec:
           title: 送信トピック名（rewards）
           description: "リワードイベントを送信する Kafka トピック名（例: rewards）"
 
+    - title: テスト設定
+      description: "Pipeline で実施するテスト・スキャンを選択してください"
+      properties:
+        enable_checkstyle:
+          type: boolean
+          title: Checkstyle（コードスタイルチェック）
+          description: "Maven checkstyle:check を実行します"
+          default: true
+        enable_pmd:
+          type: boolean
+          title: PMD（静的解析）
+          description: "Maven pmd:pmd を実行します"
+          default: true
+        enable_semgrep:
+          type: boolean
+          title: Semgrep（SAST セキュリティスキャン）
+          description: "p/java, p/owasp-top-ten, p/secrets ルールでスキャンします"
+          default: true
+        enable_gitleaks:
+          type: boolean
+          title: Gitleaks（シークレットスキャン）
+          description: "ソースコード中のシークレット漏洩を検出します"
+          default: true
+        enable_trivy:
+          type: boolean
+          title: Trivy（脆弱性スキャン）
+          description: "依存ライブラリの CVE・設定ミスをスキャンします"
+          default: true
+        enable_wapiti:
+          type: boolean
+          title: Wapiti（Web セキュリティテスト）
+          description: "デプロイ後のアプリに対して DAST を実行します（デプロイが必要）"
+          default: false
+
     - title: Tekton情報
       required: [tektonNamespace, clusterDomain]
       properties:
@@ -64,7 +101,7 @@ spec:
         clusterDomain:
           type: string
           title: クラスタードメイン
-          description: apps.<cluster-domain>
+          description: apps. から始まるドメイン名を記載
           default: apps.ocp.hfczn.sandbox2320.opentlc.com
 
     - title: 所有者情報
@@ -90,6 +127,12 @@ spec:
           kafka_topic_orders_in_prod: ${{ parameters.kafka_topic_orders_in_prod }}
           kafka_topic_orders_in_dev: ${{ parameters.kafka_topic_orders_in_dev }}
           kafka_topic_rewards: ${{ parameters.kafka_topic_rewards }}
+          enable_checkstyle: ${{ parameters.enable_checkstyle }}
+          enable_pmd: ${{ parameters.enable_pmd }}
+          enable_semgrep: ${{ parameters.enable_semgrep }}
+          enable_gitleaks: ${{ parameters.enable_gitleaks }}
+          enable_trivy: ${{ parameters.enable_trivy }}
+          enable_wapiti: ${{ parameters.enable_wapiti }}
 
     - id: publish
       name: GitHubへPush
@@ -156,10 +199,34 @@ spec:
               backstage.io/created-at: ${{ parameters.created_at }}
           spec:
             params:
-              - default: latest
-                description: Image Tag Value
-                name: IMAGE_TAG
+              - name: IMAGE_TAG
                 type: string
+                description: Image Tag Value
+                default: latest
+              - name: ENABLE_CHECKSTYLE
+                type: string
+                description: "Checkstyle を実行するか (true/false)"
+                default: "${{ parameters.enable_checkstyle }}"
+              - name: ENABLE_PMD
+                type: string
+                description: "PMD を実行するか (true/false)"
+                default: "${{ parameters.enable_pmd }}"
+              - name: ENABLE_SEMGREP
+                type: string
+                description: "Semgrep を実行するか (true/false)"
+                default: "${{ parameters.enable_semgrep }}"
+              - name: ENABLE_GITLEAKS
+                type: string
+                description: "Gitleaks を実行するか (true/false)"
+                default: "${{ parameters.enable_gitleaks }}"
+              - name: ENABLE_TRIVY
+                type: string
+                description: "Trivy を実行するか (true/false)"
+                default: "${{ parameters.enable_trivy }}"
+              - name: ENABLE_WAPITI
+                type: string
+                description: "Wapiti を実行するか (true/false)"
+                default: "${{ parameters.enable_wapiti }}"
             results:
               - name: junit
                 description: JUnit test result summary
@@ -178,12 +245,14 @@ spec:
               - name: dependency-check-cache
                 description: "NVD DB (dependency-check-db PVC, CronJob で毎日更新)"
             tasks:
+              # ── 並列: 事前準備 ─────────────────────────────────────────────
               - name: owasp-dependency-check-update
                 taskRef:
                   name: owasp-dependency-check-update
                 workspaces:
                   - name: cache
                     workspace: dependency-check-cache
+
               - name: fetch-repository
                 params:
                   - name: url
@@ -198,9 +267,53 @@ spec:
                 workspaces:
                   - name: output
                     workspace: shared-workspace
+
+              # ── fetch-repository 後: 静的解析・スキャン（maven-run と並列）──
+              - name: checkstyle-run
+                runAfter:
+                  - fetch-repository
+                when:
+                  - input: "$(params.ENABLE_CHECKSTYLE)"
+                    operator: in
+                    values: ["true"]
+                taskRef:
+                  kind: Task
+                  name: maven-no-settings21
+                params:
+                  - name: CONTEXT_DIR
+                    value: .
+                  - name: GOALS
+                    value: "checkstyle:check -Dcheckstyle.failsOnError=false"
+                workspaces:
+                  - name: source
+                    workspace: shared-workspace
+
+              - name: pmd-run
+                runAfter:
+                  - fetch-repository
+                when:
+                  - input: "$(params.ENABLE_PMD)"
+                    operator: in
+                    values: ["true"]
+                taskRef:
+                  kind: Task
+                  name: maven-no-settings21
+                params:
+                  - name: CONTEXT_DIR
+                    value: .
+                  - name: GOALS
+                    value: "pmd:pmd -Dpmd.failOnViolation=false"
+                workspaces:
+                  - name: source
+                    workspace: shared-workspace
+
               - name: semgrep-scan
                 runAfter:
                   - fetch-repository
+                when:
+                  - input: "$(params.ENABLE_SEMGREP)"
+                    operator: in
+                    values: ["true"]
                 taskRef:
                   kind: Task
                   name: semgrep-scan
@@ -212,9 +325,32 @@ spec:
                 workspaces:
                   - name: source
                     workspace: shared-workspace
+
+              - name: gitleaks-scan
+                runAfter:
+                  - fetch-repository
+                when:
+                  - input: "$(params.ENABLE_GITLEAKS)"
+                    operator: in
+                    values: ["true"]
+                taskRef:
+                  kind: Task
+                  name: gitleaks-scan
+                params:
+                  - name: REPORT_FORMAT
+                    value: json
+                  - name: REPORT_PATH
+                    value: target/gitleaks-report.json
+                  - name: EXIT_CODE
+                    value: "0"
+                workspaces:
+                  - name: source
+                    workspace: shared-workspace
+
+              # ── fetch-repository 後: ビルド（静的解析と並列）────────────────
               - name: maven-run
                 runAfter:
-                  - semgrep-scan
+                  - fetch-repository
                 taskRef:
                   kind: Task
                   name: maven-no-settings21
@@ -226,6 +362,31 @@ spec:
                 workspaces:
                   - name: source
                     workspace: shared-workspace
+
+              # ── maven-run 後: 成果物スキャン ──────────────────────────────
+              - name: trivy-scan
+                runAfter:
+                  - maven-run
+                when:
+                  - input: "$(params.ENABLE_TRIVY)"
+                    operator: in
+                    values: ["true"]
+                taskRef:
+                  kind: Task
+                  name: trivy-scan
+                params:
+                  - name: SCANNERS
+                    value: "vuln,secret,misconfig,license"
+                  - name: EXIT_CODE
+                    value: "0"
+                  - name: IGNOREFILE
+                    value: .trivyignore.yaml
+                  - name: OUTPUT_FILE
+                    value: target/trivy.txt
+                workspaces:
+                  - name: source
+                    workspace: shared-workspace
+
               - name: owasp-dependency-check
                 runAfter:
                   - maven-run
@@ -243,6 +404,8 @@ spec:
                     workspace: shared-workspace
                   - name: cache
                     workspace: dependency-check-cache
+
+              # ── レポート集計・公開 ─────────────────────────────────────────
               - name: print-csv-table
                 runAfter:
                   - owasp-dependency-check
@@ -256,6 +419,7 @@ spec:
                 workspaces:
                   - name: source
                     workspace: shared-workspace
+
               - name: publish-test-report
                 runAfter:
                   - print-csv-table
@@ -270,6 +434,7 @@ spec:
                 workspaces:
                   - name: source
                     workspace: shared-workspace
+
               - name: pipeline-summary
                 runAfter:
                   - publish-test-report
@@ -307,6 +472,8 @@ spec:
                     value: $(tasks.owasp-dependency-check.results.total)
                   - name: REPORT_URL
                     value: $(tasks.publish-test-report.results.report-url)
+
+              # ── デプロイ ──────────────────────────────────────────────────
               - name: push-oc-apps
                 runAfter:
                   - print-csv-table
@@ -348,6 +515,30 @@ spec:
                           KAFKA_BOOTSTRAP_URLS=$KAFKA_URL \
                           JAVA_OPTS_APPEND="-Dquarkus.profile=prod" -n $DEPLOY_NS
                       fi
+                workspaces:
+                  - name: source
+                    workspace: shared-workspace
+
+              # ── デプロイ後: DAST ─────────────────────────────────────────
+              - name: wapiti-scan
+                runAfter:
+                  - push-oc-apps
+                when:
+                  - input: "$(params.ENABLE_WAPITI)"
+                    operator: in
+                    values: ["true"]
+                taskRef:
+                  kind: Task
+                  name: wapiti-scan
+                params:
+                  - name: APP_NAME
+                    value: ${{ parameters.app_name }}
+                  - name: DEPLOY_NAMESPACE
+                    value: quarkusdroneshop-demo
+                  - name: OUTPUT_FILE
+                    value: target/wapiti.json
+                  - name: MAX_SCAN_TIME
+                    value: "60"
                 workspaces:
                   - name: source
                     workspace: shared-workspace
@@ -405,6 +596,21 @@ spec:
           spec:
             pipelineRef:
               name: build-and-push-quarkusdroneshop-${{ parameters.app_name }}
+            params:
+              - name: IMAGE_TAG
+                value: ${{ parameters.image_tag }}
+              - name: ENABLE_CHECKSTYLE
+                value: "${{ parameters.enable_checkstyle }}"
+              - name: ENABLE_PMD
+                value: "${{ parameters.enable_pmd }}"
+              - name: ENABLE_SEMGREP
+                value: "${{ parameters.enable_semgrep }}"
+              - name: ENABLE_GITLEAKS
+                value: "${{ parameters.enable_gitleaks }}"
+              - name: ENABLE_TRIVY
+                value: "${{ parameters.enable_trivy }}"
+              - name: ENABLE_WAPITI
+                value: "${{ parameters.enable_wapiti }}"
             workspaces:
               - name: shared-workspace
                 persistentVolumeClaim:
