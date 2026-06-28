@@ -228,13 +228,7 @@ spec:
                 description: "Wapiti を実行するか (true/false)"
                 default: "${{ parameters.enable_wapiti }}"
             results:
-              - name: junit
-                description: JUnit test result summary
-                value: $(tasks.pipeline-summary.results.junit)
-              - name: semgrep
-                description: Semgrep SAST result summary
-                value: $(tasks.pipeline-summary.results.semgrep)
-              - name: report-url
+              - name: テスト結果
                 description: Test report URL
                 value: $(tasks.pipeline-summary.results.report-url)
             workspaces:
@@ -662,7 +656,5 @@ spec:
 
   output:
     links:
-      - title: GitHub Repository
-        url: ${{ steps['publish'].output.remoteUrl }}
-      - title: OpenShift Pipelines
-        url: https://console-openshift-console.${{ parameters.clusterDomain }}/k8s/ns/${{ parameters.tektonNamespace }}/tekton.dev~v1~PipelineRun
+      - title: テストレポート
+        url: http://${{ parameters.app_name }}-test-report-${{ parameters.tektonNamespace }}.apps.${{ parameters.clusterDomain }}/
