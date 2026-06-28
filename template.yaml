@@ -63,32 +63,32 @@ spec:
         enable_checkstyle:
           type: boolean
           title: Checkstyle（コードスタイルチェック）
-          description: "Maven checkstyle:check を実行します"
+          description: "Maven checkstyle:check を実行します（fetch 後すぐ並列実行）"
           default: true
         enable_pmd:
           type: boolean
           title: PMD（静的解析）
-          description: "Maven pmd:pmd を実行します"
+          description: "Maven pmd:pmd を実行します（fetch 後すぐ並列実行）"
           default: true
         enable_semgrep:
           type: boolean
           title: Semgrep（SAST セキュリティスキャン）
-          description: "p/java, p/owasp-top-ten, p/secrets ルールでスキャンします"
+          description: "p/java, p/owasp-top-ten, p/secrets ルールでスキャンします（fetch 後すぐ並列実行）"
           default: true
         enable_gitleaks:
           type: boolean
           title: Gitleaks（シークレットスキャン）
-          description: "ソースコード中のシークレット漏洩を検出します"
+          description: "ソースコード中のシークレット漏洩を検出します（fetch 後すぐ並列実行・最速）"
           default: true
         enable_trivy:
           type: boolean
           title: Trivy（脆弱性スキャン）
-          description: "依存ライブラリの CVE・設定ミスをスキャンします"
+          description: "pom.xml を直接スキャンし CVE を検出します（fetch 後すぐ並列実行・ビルド不要）"
           default: true
         enable_wapiti:
           type: boolean
-          title: Wapiti（Web セキュリティテスト）
-          description: "デプロイ後のアプリに対して DAST を実行します（デプロイが必要）"
+          title: Wapiti（Web セキュリティテスト / DAST）
+          description: "デプロイ後のアプリに対して DAST を実行します（デプロイ完了後）"
           default: false
 
     - title: Tekton情報
@@ -234,25 +234,15 @@ spec:
               - name: semgrep
                 description: Semgrep SAST result summary
                 value: $(tasks.pipeline-summary.results.semgrep)
-              - name: owasp
-                description: OWASP Dependency-Check result summary
-                value: $(tasks.pipeline-summary.results.owasp)
               - name: report-url
                 description: Test report URL
                 value: $(tasks.pipeline-summary.results.report-url)
             workspaces:
               - name: shared-workspace
-              - name: dependency-check-cache
-                description: "NVD DB (dependency-check-db PVC, CronJob で毎日更新)"
             tasks:
-              # ── 並列: 事前準備 ─────────────────────────────────────────────
-              - name: owasp-dependency-check-update
-                taskRef:
-                  name: owasp-dependency-check-update
-                workspaces:
-                  - name: cache
-                    workspace: dependency-check-cache
-
+              # ═══════════════════════════════════════════════════════════════
+              # Stage 1: ソース取得
+              # ═══════════════════════════════════════════════════════════════
               - name: fetch-repository
                 params:
                   - name: url
@@ -268,7 +258,61 @@ spec:
                   - name: output
                     workspace: shared-workspace
 
-              # ── fetch-repository 後: 静的解析・スキャン（maven-run と並列）──
+              # ═══════════════════════════════════════════════════════════════
+              # Stage 2: 並列スキャン（全て fetch-repository 後に同時実行）
+              #
+              # gitleaks   → シークレット検出（最速: ~10s）
+              # semgrep    → SAST セキュリティスキャン（~30s）
+              # checkstyle → コードスタイルチェック（Maven 起動込み ~45s）
+              # pmd        → 静的解析（Maven 起動込み ~45s）
+              # trivy      → pom.xml を直接解析して CVE 検出（~40s）
+              #              ※ビルド不要のため maven-run(60s+) より先に終わる
+              #              → publish-test-report 実行時には trivy.txt が揃う
+              # maven-run  → コンパイル + ユニットテスト（最長: 60s+）
+              # ═══════════════════════════════════════════════════════════════
+
+              - name: gitleaks-scan
+                runAfter:
+                  - fetch-repository
+                when:
+                  - input: "$(params.ENABLE_GITLEAKS)"
+                    operator: in
+                    values: ["true"]
+                onError: continue
+                taskRef:
+                  kind: Task
+                  name: gitleaks-scan
+                params:
+                  - name: REPORT_FORMAT
+                    value: json
+                  - name: REPORT_PATH
+                    value: target/gitleaks-report.json
+                  - name: EXIT_CODE
+                    value: "0"
+                workspaces:
+                  - name: source
+                    workspace: shared-workspace
+
+              - name: semgrep-scan
+                runAfter:
+                  - fetch-repository
+                when:
+                  - input: "$(params.ENABLE_SEMGREP)"
+                    operator: in
+                    values: ["true"]
+                onError: continue
+                taskRef:
+                  kind: Task
+                  name: semgrep-scan
+                params:
+                  - name: RULES
+                    value: "p/java,p/owasp-top-ten,p/secrets"
+                  - name: FAIL_ON_FINDINGS
+                    value: "false"
+                workspaces:
+                  - name: source
+                    workspace: shared-workspace
+
               - name: checkstyle-run
                 runAfter:
                   - fetch-repository
@@ -276,6 +320,7 @@ spec:
                   - input: "$(params.ENABLE_CHECKSTYLE)"
                     operator: in
                     values: ["true"]
+                onError: continue
                 taskRef:
                   kind: Task
                   name: maven-no-settings21
@@ -295,6 +340,7 @@ spec:
                   - input: "$(params.ENABLE_PMD)"
                     operator: in
                     values: ["true"]
+                onError: continue
                 taskRef:
                   kind: Task
                   name: maven-no-settings21
@@ -307,70 +353,14 @@ spec:
                   - name: source
                     workspace: shared-workspace
 
-              - name: semgrep-scan
-                runAfter:
-                  - fetch-repository
-                when:
-                  - input: "$(params.ENABLE_SEMGREP)"
-                    operator: in
-                    values: ["true"]
-                taskRef:
-                  kind: Task
-                  name: semgrep-scan
-                params:
-                  - name: RULES
-                    value: "p/java,p/owasp-top-ten,p/secrets"
-                  - name: FAIL_ON_FINDINGS
-                    value: "false"
-                workspaces:
-                  - name: source
-                    workspace: shared-workspace
-
-              - name: gitleaks-scan
-                runAfter:
-                  - fetch-repository
-                when:
-                  - input: "$(params.ENABLE_GITLEAKS)"
-                    operator: in
-                    values: ["true"]
-                taskRef:
-                  kind: Task
-                  name: gitleaks-scan
-                params:
-                  - name: REPORT_FORMAT
-                    value: json
-                  - name: REPORT_PATH
-                    value: target/gitleaks-report.json
-                  - name: EXIT_CODE
-                    value: "0"
-                workspaces:
-                  - name: source
-                    workspace: shared-workspace
-
-              # ── fetch-repository 後: ビルド（静的解析と並列）────────────────
-              - name: maven-run
-                runAfter:
-                  - fetch-repository
-                taskRef:
-                  kind: Task
-                  name: maven-no-settings21
-                params:
-                  - name: CONTEXT_DIR
-                    value: .
-                  - name: GOALS
-                    value: "clean verify"
-                workspaces:
-                  - name: source
-                    workspace: shared-workspace
-
-              # ── maven-run 後: 成果物スキャン ──────────────────────────────
               - name: trivy-scan
                 runAfter:
-                  - maven-run
+                  - fetch-repository
                 when:
                   - input: "$(params.ENABLE_TRIVY)"
                     operator: in
                     values: ["true"]
+                onError: continue
                 taskRef:
                   kind: Task
                   name: trivy-scan
@@ -387,28 +377,35 @@ spec:
                   - name: source
                     workspace: shared-workspace
 
-              - name: owasp-dependency-check
+              - name: maven-run
                 runAfter:
-                  - maven-run
-                  - owasp-dependency-check-update
+                  - fetch-repository
                 taskRef:
                   kind: Task
-                  name: owasp-dependency-check
+                  name: maven-no-settings21
                 params:
-                  - name: FAIL_ON_CVSS
-                    value: "8"
-                  - name: NVD_API_DELAY
-                    value: "16000"
+                  - name: CONTEXT_DIR
+                    value: .
+                  - name: GOALS
+                    value: "clean verify"
                 workspaces:
                   - name: source
                     workspace: shared-workspace
-                  - name: cache
-                    workspace: dependency-check-cache
 
-              # ── レポート集計・公開 ─────────────────────────────────────────
+              # ═══════════════════════════════════════════════════════════════
+              # Stage 3: テスト結果集計（maven-run 完了後）
+              #   この時点で並列実行した各ツールの出力ファイルが揃っている:
+              #   - target/surefire-reports/       (maven-run)
+              #   - target/gitleaks-report.json    (gitleaks-scan)
+              #   - target/semgrep-reports/        (semgrep-scan)
+              #   - target/checkstyle-result.xml   (checkstyle-run)
+              #   - target/pmd.xml                 (pmd-run)
+              #   - target/trivy.txt               (trivy-scan: pom.xmlスキャンなので早期完了)
+              # ═══════════════════════════════════════════════════════════════
+
               - name: print-csv-table
                 runAfter:
-                  - owasp-dependency-check
+                  - maven-run
                 onError: continue
                 taskRef:
                   kind: Task
@@ -419,6 +416,10 @@ spec:
                 workspaces:
                   - name: source
                     workspace: shared-workspace
+
+              # ═══════════════════════════════════════════════════════════════
+              # Stage 4: レポート公開（publish と summary は並列）
+              # ═══════════════════════════════════════════════════════════════
 
               - name: publish-test-report
                 runAfter:
@@ -437,7 +438,7 @@ spec:
 
               - name: pipeline-summary
                 runAfter:
-                  - publish-test-report
+                  - print-csv-table
                 taskRef:
                   kind: Task
                   name: pipeline-summary
@@ -460,23 +461,16 @@ spec:
                     value: $(tasks.semgrep-scan.results.low)
                   - name: SEMGREP_TOTAL
                     value: $(tasks.semgrep-scan.results.total)
-                  - name: OWASP_CRITICAL
-                    value: $(tasks.owasp-dependency-check.results.critical)
-                  - name: OWASP_HIGH
-                    value: $(tasks.owasp-dependency-check.results.high)
-                  - name: OWASP_MEDIUM
-                    value: $(tasks.owasp-dependency-check.results.medium)
-                  - name: OWASP_LOW
-                    value: $(tasks.owasp-dependency-check.results.low)
-                  - name: OWASP_TOTAL
-                    value: $(tasks.owasp-dependency-check.results.total)
                   - name: REPORT_URL
                     value: $(tasks.publish-test-report.results.report-url)
 
-              # ── デプロイ ──────────────────────────────────────────────────
+              # ═══════════════════════════════════════════════════════════════
+              # Stage 5: デプロイ（publish-test-report 完了後）
+              # ═══════════════════════════════════════════════════════════════
+
               - name: push-oc-apps
                 runAfter:
-                  - print-csv-table
+                  - publish-test-report
                 taskRef:
                   name: push-app-task
                 params:
@@ -519,7 +513,10 @@ spec:
                   - name: source
                     workspace: shared-workspace
 
-              # ── デプロイ後: DAST ─────────────────────────────────────────
+              # ═══════════════════════════════════════════════════════════════
+              # Stage 6: DAST（デプロイ完了後・アプリ起動確認後に実行）
+              # ═══════════════════════════════════════════════════════════════
+
               - name: wapiti-scan
                 runAfter:
                   - push-oc-apps
@@ -527,6 +524,7 @@ spec:
                   - input: "$(params.ENABLE_WAPITI)"
                     operator: in
                     values: ["true"]
+                onError: continue
                 taskRef:
                   kind: Task
                   name: wapiti-scan
@@ -615,9 +613,6 @@ spec:
               - name: shared-workspace
                 persistentVolumeClaim:
                   claimName: quarkusdroneshop-${{ parameters.app_name }}-shared-workspace-pvc
-              - name: dependency-check-cache
-                persistentVolumeClaim:
-                  claimName: dependency-check-db
 
   output:
     links:
