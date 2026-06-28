@@ -408,9 +408,26 @@ spec:
                   - name: source
                     workspace: shared-workspace
 
+              - name: generate-report
+                onError: continue
+                runAfter:
+                  - maven-e2e-test
+                taskRef:
+                  kind: Task
+                  name: maven-no-settings21
+                params:
+                  - name: CONTEXT_DIR
+                    value: .
+                  - name: GOALS
+                    value: "exec:exec@generate-report"
+                workspaces:
+                  - name: source
+                    workspace: shared-workspace
+
               # ═══════════════════════════════════════════════════════════════
-              # Stage 3: テスト結果集計（maven-e2e-test 完了後）
+              # Stage 3: テスト結果集計（generate-report 完了後）
               #   この時点で並列実行した各ツールの出力ファイルが揃っている:
+              #   - target/test-report/index.html  (generate-report)
               #   - target/surefire-reports/       (maven-unit-test)
               #   - target/failsafe-reports/       (maven-e2e-test / Playwright)
               #   - target/gitleaks-report.json    (gitleaks-scan)
@@ -422,7 +439,7 @@ spec:
 
               - name: print-csv-table
                 runAfter:
-                  - maven-e2e-test
+                  - generate-report
                 onError: continue
                 taskRef:
                   kind: Task
