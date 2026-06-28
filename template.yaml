@@ -411,7 +411,7 @@ spec:
               - name: generate-report
                 onError: continue
                 runAfter:
-                  - maven-e2e-test
+                  - wapiti-scan
                 taskRef:
                   kind: Task
                   name: maven-no-settings21
@@ -504,7 +504,7 @@ spec:
 
               - name: push-oc-apps
                 runAfter:
-                  - publish-test-report
+                  - maven-e2e-test
                 taskRef:
                   name: push-app-task
                 params:
@@ -565,12 +565,8 @@ spec:
                 params:
                   - name: APP_NAME
                     value: ${{ parameters.app_name }}
-                  - name: DEPLOY_NAMESPACE
-                    value: quarkusdroneshop-demo
-                  - name: OUTPUT_FILE
-                    value: target/wapiti.json
-                  - name: MAX_SCAN_TIME
-                    value: "60"
+                  - name: NAMESPACE
+                    value: "quarkusdroneshop-demo"
                 workspaces:
                   - name: source
                     workspace: shared-workspace
