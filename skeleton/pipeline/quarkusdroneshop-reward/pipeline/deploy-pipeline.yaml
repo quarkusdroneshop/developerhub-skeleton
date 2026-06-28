@@ -55,6 +55,8 @@ spec:
           value: "p/java,p/owasp-top-ten,p/secrets"
         - name: FAIL_ON_FINDINGS
           value: "false"
+        - name: OUTPUT_DIR
+          value: "target/semgrep-reports"
       workspaces:
         - name: source
           workspace: shared-workspace
