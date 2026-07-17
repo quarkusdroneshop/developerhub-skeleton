@@ -102,7 +102,7 @@ spec:
           type: string
           title: クラスタードメイン
           description: apps. から始まるドメイン名を記載
-          default: apps.ocp.7n8gs.sandbox847.opentlc.com
+          default: apps.ocp.m489t.sandbox2256.opentlc.com
 
     - title: 所有者情報
       required: [owner]
