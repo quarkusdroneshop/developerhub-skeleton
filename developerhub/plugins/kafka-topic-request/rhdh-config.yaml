@@ -1,0 +1,19 @@
+# app-config-rhdh.yaml / dynamic-plugins-rhdh.yaml の dynamicPlugins.frontend に以下を追記する
+
+#        internal.plugin-kafka-topic-request:
+#          mountPoints:
+#            - mountPoint: entity.page.kafka-topic-request/cards
+#              importName: KafkaTopicRequestContent
+#              config:
+#                layout:
+#                  gridColumn: "1 / -1"
+#                if:
+#                  allOf:
+#                    - isKind: component
+#          entityTabs:
+#            - path: /kafka-topic-request
+#              title: Kafka Topic
+#              mountPoint: entity.page.kafka-topic-request
+#              if:
+#                allOf:
+#                  - isKind: component
