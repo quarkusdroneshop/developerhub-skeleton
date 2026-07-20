@@ -11,7 +11,7 @@ export interface ChatResponse {
 /**
  * /api/v1/chat は SSE (text/event-stream) で応答する。3秒以上かかる場合は
  * 途中経過として {"status": "..."} だけを含むイベントが挟まることがあり、
- * 最終結果には "reply" が含まれる。(frontend/chat-ui/src/api.ts と同じ実装)
+ * 最終結果には "reply" が含まれる。
  */
 export async function sendChatMessage(
   baseUrl: string,
@@ -75,4 +75,27 @@ export async function approveTask(
     throw new Error(`approve request failed: ${res.status}`);
   }
   return res.json();
+}
+
+export function buildRequestMessage(
+  topicName: string,
+  site: string,
+  repoSlug: string | undefined,
+  comment: string,
+): string {
+  const lines = [
+    'Developer Hub からのトピック作成依頼です。',
+    `トピック名: ${topicName}`,
+    `対象サイト: ${site}`,
+  ];
+  if (repoSlug) {
+    lines.push(`対象リポジトリ: ${repoSlug}`);
+  }
+  lines.push(`追加コメント: ${comment.trim() || '(なし)'}`);
+  lines.push(
+    'このトピックが対象サイトの実ブローカーに既に存在する場合は何もせず、' +
+      '存在しない場合のみ、追加コメントおよび対象リポジトリのソースコード/README' +
+      'から説明文を組み立てた上で新規作成してください。',
+  );
+  return lines.join('\n');
 }

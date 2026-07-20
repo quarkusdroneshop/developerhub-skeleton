@@ -51,7 +51,7 @@ RUN mkdir -p /opt/backstage/node_modules/@internal \
 # (dynamic-plugins-root はボリュームマウントなので dynamic-plugins/dist/ に配置する)
 COPY plugins/test-report/dist-dynamic /opt/app-root/src/dynamic-plugins/dist/internal-plugin-test-report
 COPY plugins/data-catalog/dist-dynamic /opt/app-root/src/dynamic-plugins/dist/internal-plugin-data-catalog
-COPY plugins/kafka-topic-request/dist-dynamic /opt/app-root/src/dynamic-plugins/dist/internal-plugin-kafka-topic-request
+COPY plugins/kafka-topic-request-scaffolder-actions/dist-dynamic /opt/app-root/src/dynamic-plugins/dist/internal-plugin-kafka-topic-request-scaffolder-actions
 
 RUN ls /opt/backstage/node_modules/@backstage/backend-defaults/package.json \
  && echo "=== @backstage/backend-defaults OK ===" \

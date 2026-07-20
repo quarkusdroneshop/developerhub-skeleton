@@ -1,9 +1,9 @@
 # app-config-rhdh.yaml / dynamic-plugins-rhdh.yaml の dynamicPlugins.frontend に以下を追記する
 
-#        internal.plugin-kafka-topic-request:
+#        internal.plugin-skupper-console:
 #          mountPoints:
-#            - mountPoint: entity.page.kafka-topic-request/cards
-#              importName: KafkaTopicRequestContent
+#            - mountPoint: entity.page.skupper-console/cards
+#              importName: SkupperConsoleContent
 #              config:
 #                layout:
 #                  gridColumn: "1 / -1"
@@ -11,9 +11,9 @@
 #                  allOf:
 #                    - isKind: component
 #          entityTabs:
-#            - path: /kafka-topic-request
-#              title: Kafka Topic
-#              mountPoint: entity.page.kafka-topic-request
+#            - path: /skupper-console
+#              title: Skupper Console
+#              mountPoint: entity.page.skupper-console
 #              if:
 #                allOf:
 #                  - isKind: component

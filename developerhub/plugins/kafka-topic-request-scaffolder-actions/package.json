@@ -1,14 +1,21 @@
 {
-  "name": "@internal/plugin-kafka-topic-request",
+  "name": "@internal/plugin-kafka-topic-request-scaffolder-actions",
   "version": "0.1.0",
   "main": "src/index.ts",
   "types": "src/index.ts",
   "license": "Apache-2.0",
+  "private": true,
+  "publishConfig": {
+    "access": "public",
+    "main": "dist/index.cjs.js",
+    "types": "dist/index.d.ts"
+  },
   "backstage": {
-    "role": "frontend-plugin",
-    "pluginId": "kafka-topic-request",
+    "role": "backend-plugin-module",
+    "pluginId": "scaffolder",
+    "pluginPackage": "@backstage/plugin-scaffolder-backend",
     "pluginPackages": [
-      "@internal/plugin-kafka-topic-request"
+      "@internal/plugin-kafka-topic-request-scaffolder-actions"
     ]
   },
   "scripts": {
@@ -18,23 +25,17 @@
     "lint:fix": "backstage-cli package lint --fix",
     "clean": "backstage-cli package clean",
     "tsc": "tsc",
-    "export-dynamic": "yarn dlx @janus-idp/cli package export-dynamic-plugin",
+    "export-dynamic": "yarn dlx @red-hat-developer-hub/cli plugin export",
     "prettier:check": "prettier --ignore-unknown --check .",
     "prettier:fix": "prettier --ignore-unknown --write ."
   },
   "dependencies": {
-    "@backstage/catalog-model": "1.7.7",
-    "@backstage/core-components": "0.18.8",
-    "@backstage/core-plugin-api": "1.12.4",
-    "@backstage/plugin-catalog-react": "2.1.1",
-    "react": "^18.0.2",
-    "react-dom": "^18.0.2"
+    "@backstage/backend-plugin-api": "1.8.0",
+    "@backstage/config": "1.3.6",
+    "@backstage/plugin-scaffolder-node": "0.13.3"
   },
   "devDependencies": {
     "@backstage/cli": "0.36.0",
-    "@types/react": "^18",
-    "@types/react-dom": "^18",
-    "prettier": "3.8.1",
     "typescript": "5.9.3"
   },
   "files": [

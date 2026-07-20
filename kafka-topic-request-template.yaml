@@ -1,0 +1,53 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: kafka-topic-request-template
+  title: Kafka トピック作成依頼
+  description: AI Agent に Kafka トピックの新規作成を依頼します
+spec:
+  owner: user:default/nmushino
+  type: resource
+
+  parameters:
+    - title: トピック情報
+      required: [topicName, site]
+      properties:
+        topicName:
+          type: string
+          title: トピック名
+          description: "例: order-events"
+        site:
+          type: string
+          title: 対象サイト
+          enum:
+            - Aサイト
+            - Bサイト
+            - Cサイト
+          enumNames:
+            - Aサイト (asite)
+            - Bサイト (bsite)
+            - Cサイト (csite)
+        repoSlug:
+          type: string
+          title: 対象リポジトリ (任意)
+          description: "例: quarkusdroneshop/order-service (このトピックの説明文を組み立てる際の参照元)"
+        comment:
+          type: string
+          title: 追加コメント (任意)
+          description: このトピックの用途や流すデータについて補足があれば入力してください
+          ui:widget: textarea
+
+  steps:
+    - id: request-topic
+      name: AI Agent へ依頼
+      action: kafka:topic:request
+      input:
+        topicName: ${{ parameters.topicName }}
+        site: ${{ parameters.site }}
+        comment: ${{ parameters.comment }}
+        repoSlug: ${{ parameters.repoSlug }}
+
+  output:
+    text:
+      - title: AI Agent からの応答
+        content: ${{ steps['request-topic'].output.reply }}

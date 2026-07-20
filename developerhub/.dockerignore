@@ -2,6 +2,8 @@
 .yarn/install-state.gz
 **/dist
 **/node_modules
+!plugins/*/dist-dynamic/dist
+!plugins/*/dist-dynamic/node_modules
 *.local.yaml
 coverage
 dist-types

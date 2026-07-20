@@ -3,9 +3,9 @@ import { useEntity } from '@backstage/plugin-catalog-react';
 import { useApi, configApiRef } from '@backstage/core-plugin-api';
 
 const CLUSTER_DOMAINS: Record<string, string> = {
-  'a-cluster': 'apps.ocp.hnkwm.sandbox225.opentlc.com',
-  'b-cluster': 'apps.ocp.mnlq9.sandbox1332.opentlc.com',
-  'c-cluster': 'apps.ocp.49dgc.sandbox1447.opentlc.com',
+  'a-cluster': 'apps.ocp.zgjl6.sandbox780.opentlc.com',
+  'b-cluster': 'apps.ocp.659hh.sandbox2372.opentlc.com',
+  'c-cluster': 'apps.ocp.44gnd.sandbox850.opentlc.com',
 };
 const NAMESPACE = 'quarkusdroneshop-cicd';
 

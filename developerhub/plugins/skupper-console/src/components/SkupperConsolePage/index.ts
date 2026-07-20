@@ -1,0 +1,1 @@
+export { SkupperConsoleContent } from './SkupperConsolePage';
