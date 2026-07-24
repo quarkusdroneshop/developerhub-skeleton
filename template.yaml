@@ -73,18 +73,12 @@ spec:
           type: string
           title: 送信トピック名（rewards）
           description: "リワードイベントを送信する Kafka トピック名（例: rewards）"
-        create_topic_custom:
-          type: boolean
-          title: その他のトピックを作成する
-          default: false
-        kafka_topic_custom_name:
-          type: string
-          title: トピック名（自由入力）
-          description: "上記3つに当てはまらないトピックがあれば入力（例: dataproduct-inventory-events）"
         kafka_topic_custom_comment:
           type: string
-          title: 用途の説明（自由入力）
-          description: AI Agent がOpenMetadataへの登録時に使う説明文の元になります
+          title: 追加メモ（自由入力、任意）
+          description: >-
+            チェックを入れて作成する各トピックのOpenMetadata登録用説明文に
+            追記されます。
 
     - title: テスト設定
       description: "Pipeline で実施するテスト・スキャンを選択してください"
@@ -156,7 +150,6 @@ spec:
           kafka_topic_orders_in_prod: ${{ parameters.kafka_topic_orders_in_prod }}
           kafka_topic_orders_in_dev: ${{ parameters.kafka_topic_orders_in_dev }}
           kafka_topic_rewards: ${{ parameters.kafka_topic_rewards }}
-          kafka_topic_custom_name: ${{ parameters.kafka_topic_custom_name }}
           enable_checkstyle: ${{ parameters.enable_checkstyle }}
           enable_pmd: ${{ parameters.enable_pmd }}
           enable_semgrep: ${{ parameters.enable_semgrep }}
@@ -187,7 +180,7 @@ spec:
         topicName: ${{ parameters.kafka_topic_orders_in_prod }}
         site: ${{ "Aサイト" if parameters.system_name == "a-cluster" else ("Bサイト" if parameters.system_name == "b-cluster" else "Cサイト") }}
         repoSlug: ${{ parameters.git_owner_name }}/${{ parameters.git_repo_name }}
-        comment: "${{ parameters.app_name }} が本番環境で受信するトピック"
+        comment: "${{ parameters.app_name }} が本番環境で受信するトピック。${{ parameters.kafka_topic_custom_comment }}"
 
     - id: request-topic-orders-in-dev
       name: Kafkaトピック作成依頼 (受信/dev)
@@ -197,7 +190,7 @@ spec:
         topicName: ${{ parameters.kafka_topic_orders_in_dev }}
         site: ${{ "Aサイト" if parameters.system_name == "a-cluster" else ("Bサイト" if parameters.system_name == "b-cluster" else "Cサイト") }}
         repoSlug: ${{ parameters.git_owner_name }}/${{ parameters.git_repo_name }}
-        comment: "${{ parameters.app_name }} が開発環境で受信するトピック"
+        comment: "${{ parameters.app_name }} が開発環境で受信するトピック。${{ parameters.kafka_topic_custom_comment }}"
 
     - id: request-topic-rewards
       name: Kafkaトピック作成依頼 (送信/rewards)
@@ -207,17 +200,7 @@ spec:
         topicName: ${{ parameters.kafka_topic_rewards }}
         site: ${{ "Aサイト" if parameters.system_name == "a-cluster" else ("Bサイト" if parameters.system_name == "b-cluster" else "Cサイト") }}
         repoSlug: ${{ parameters.git_owner_name }}/${{ parameters.git_repo_name }}
-        comment: "${{ parameters.app_name }} が送信するリワードイベントのトピック"
-
-    - id: request-topic-custom
-      name: Kafkaトピック作成依頼 (自由入力)
-      action: kafka:topic:request
-      if: ${{ parameters.create_topic_custom and parameters.kafka_topic_custom_name }}
-      input:
-        topicName: ${{ parameters.kafka_topic_custom_name }}
-        site: ${{ "Aサイト" if parameters.system_name == "a-cluster" else ("Bサイト" if parameters.system_name == "b-cluster" else "Cサイト") }}
-        repoSlug: ${{ parameters.git_owner_name }}/${{ parameters.git_repo_name }}
-        comment: ${{ parameters.kafka_topic_custom_comment }}
+        comment: "${{ parameters.app_name }} が送信するリワードイベントのトピック。${{ parameters.kafka_topic_custom_comment }}"
 
     - id: create-namespace
       name: Namespace作成
@@ -738,7 +721,6 @@ spec:
           ${{ steps['request-topic-orders-in-prod'].output.reply }}
           ${{ steps['request-topic-orders-in-dev'].output.reply }}
           ${{ steps['request-topic-rewards'].output.reply }}
-          ${{ steps['request-topic-custom'].output.reply }}
     links:
       - title: テストレポート
         url: http://${{ parameters.app_name }}-test-report-${{ parameters.tektonNamespace }}.apps.${{ parameters.clusterDomain }}/
