@@ -43,7 +43,27 @@ spec:
             - C クラスター
 
     - title: Kafka トピック設定
+      description: >-
+        トピック名を入力すると、AI Agent が対象サイトの実ブローカー上に
+        トピックが存在するか確認し、存在しなければ新規作成します
+        (kafka_site が必須になります)。作成せずアプリの環境変数設定にのみ
+        使いたい場合は kafka_site を空のままにしてください。
       properties:
+        kafka_site:
+          type: string
+          title: 対象サイト (トピック自動作成を行う場合は必須)
+          description: kafka_topic_* で指定したトピックが実際に存在するサイト
+          enum:
+            - ""
+            - Aサイト
+            - Bサイト
+            - Cサイト
+          enumNames:
+            - (トピックは作成しない)
+            - Aサイト (asite)
+            - Bサイト (bsite)
+            - Cサイト (csite)
+          default: ""
         kafka_topic_orders_in_prod:
           type: string
           title: 受信トピック名（prod）
@@ -141,6 +161,41 @@ spec:
         repoUrl: github.com?owner=${{ parameters.git_owner_name }}&repo=${{ parameters.git_repo_name }}
         defaultBranch: main
         repoVisibility: public
+
+    # kafka_site が指定されている場合のみ、各 kafka_topic_* を AI Agent 経由で
+    # 実ブローカー上に作成する (存在しなければ新規作成、存在すればスキップ)。
+    # kafka-topic-request-template.yaml と同じ kafka:topic:request アクションを
+    # 使う。repoSlug を渡すことで、AI Agent が README/ソースコードを参照して
+    # OpenMetadata登録用の説明文を組み立てられるようにする。
+    - id: request-topic-orders-in-prod
+      name: Kafkaトピック作成依頼 (受信/prod)
+      action: kafka:topic:request
+      if: ${{ parameters.kafka_site and parameters.kafka_topic_orders_in_prod }}
+      input:
+        topicName: ${{ parameters.kafka_topic_orders_in_prod }}
+        site: ${{ parameters.kafka_site }}
+        repoSlug: ${{ parameters.git_owner_name }}/${{ parameters.git_repo_name }}
+        comment: "${{ parameters.app_name }} が本番環境で受信するトピック"
+
+    - id: request-topic-orders-in-dev
+      name: Kafkaトピック作成依頼 (受信/dev)
+      action: kafka:topic:request
+      if: ${{ parameters.kafka_site and parameters.kafka_topic_orders_in_dev }}
+      input:
+        topicName: ${{ parameters.kafka_topic_orders_in_dev }}
+        site: ${{ parameters.kafka_site }}
+        repoSlug: ${{ parameters.git_owner_name }}/${{ parameters.git_repo_name }}
+        comment: "${{ parameters.app_name }} が開発環境で受信するトピック"
+
+    - id: request-topic-rewards
+      name: Kafkaトピック作成依頼 (送信/rewards)
+      action: kafka:topic:request
+      if: ${{ parameters.kafka_site and parameters.kafka_topic_rewards }}
+      input:
+        topicName: ${{ parameters.kafka_topic_rewards }}
+        site: ${{ parameters.kafka_site }}
+        repoSlug: ${{ parameters.git_owner_name }}/${{ parameters.git_repo_name }}
+        comment: "${{ parameters.app_name }} が送信するリワードイベントのトピック"
 
     - id: create-namespace
       name: Namespace作成
@@ -655,6 +710,12 @@ spec:
                   claimName: quarkusdroneshop-${{ parameters.app_name }}-shared-workspace-pvc
 
   output:
+    text:
+      - title: Kafkaトピック作成依頼の結果
+        content: |
+          ${{ steps['request-topic-orders-in-prod'].output.reply }}
+          ${{ steps['request-topic-orders-in-dev'].output.reply }}
+          ${{ steps['request-topic-rewards'].output.reply }}
     links:
       - title: テストレポート
         url: http://${{ parameters.app_name }}-test-report-${{ parameters.tektonNamespace }}.apps.${{ parameters.clusterDomain }}/
