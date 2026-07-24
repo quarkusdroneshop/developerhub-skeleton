@@ -71,7 +71,7 @@ spec:
           default: false
         kafka_topic_rewards:
           type: string
-          title: 送信トピック名（prod）
+          title: 送信するトピック名（send）
           description: "リワードイベントを送信する Kafka トピック名（例: rewards）"
         kafka_topic_custom_comment:
           type: string
