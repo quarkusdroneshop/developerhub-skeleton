@@ -2,7 +2,7 @@ apiVersion: scaffolder.backstage.io/v1beta3
 kind: Template
 metadata:
   name: tekton-trigger-template
-  title: Tekton + Trigger Template
+  title: マイクロサービスのテンプレート
   description: BackstageからTriggerでPipelineRun実行
 spec:
   owner: user:default/nmushino
@@ -206,7 +206,7 @@ spec:
       action: http:backstage:request
       input:
         method: PATCH
-        path: /proxy/target-cluster/api/v1/namespaces/${{ parameters.tektonNamespace }}?fieldManager=backstage&force=true
+        path: /proxy/${{ "target-cluster-a" if parameters.system_name == "a-cluster" else ("target-cluster-b" if parameters.system_name == "b-cluster" else "target-cluster-c") }}/api/v1/namespaces/${{ parameters.tektonNamespace }}?fieldManager=backstage&force=true
         headers:
           Content-Type: application/apply-patch+yaml
         body: |
@@ -220,7 +220,7 @@ spec:
       action: http:backstage:request
       input:
         method: PATCH
-        path: /proxy/target-cluster/api/v1/namespaces/${{ parameters.tektonNamespace }}/persistentvolumeclaims/quarkusdroneshop-${{ parameters.app_name }}-shared-workspace-pvc?fieldManager=backstage&force=true
+        path: /proxy/${{ "target-cluster-a" if parameters.system_name == "a-cluster" else ("target-cluster-b" if parameters.system_name == "b-cluster" else "target-cluster-c") }}/api/v1/namespaces/${{ parameters.tektonNamespace }}/persistentvolumeclaims/quarkusdroneshop-${{ parameters.app_name }}-shared-workspace-pvc?fieldManager=backstage&force=true
         headers:
           Content-Type: application/apply-patch+yaml
         body: |
@@ -241,7 +241,7 @@ spec:
       action: http:backstage:request
       input:
         method: PATCH
-        path: /proxy/target-cluster/apis/tekton.dev/v1/namespaces/${{ parameters.tektonNamespace }}/pipelines/build-and-push-quarkusdroneshop-${{ parameters.app_name }}?fieldManager=backstage&force=true
+        path: /proxy/${{ "target-cluster-a" if parameters.system_name == "a-cluster" else ("target-cluster-b" if parameters.system_name == "b-cluster" else "target-cluster-c") }}/apis/tekton.dev/v1/namespaces/${{ parameters.tektonNamespace }}/pipelines/build-and-push-quarkusdroneshop-${{ parameters.app_name }}?fieldManager=backstage&force=true
         headers:
           Content-Type: application/apply-patch+yaml
         body: |
@@ -677,7 +677,7 @@ spec:
       action: http:backstage:request
       input:
         method: POST
-        path: /proxy/target-cluster/apis/tekton.dev/v1/namespaces/${{ parameters.tektonNamespace }}/pipelineruns
+        path: /proxy/${{ "target-cluster-a" if parameters.system_name == "a-cluster" else ("target-cluster-b" if parameters.system_name == "b-cluster" else "target-cluster-c") }}/apis/tekton.dev/v1/namespaces/${{ parameters.tektonNamespace }}/pipelineruns
         headers:
           Content-Type: application/json
         body:
