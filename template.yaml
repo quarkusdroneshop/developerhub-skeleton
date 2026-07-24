@@ -67,18 +67,17 @@ spec:
           description: "開発環境で受信する Kafka トピック名（例: orders-in）"
         create_topic_rewards:
           type: boolean
-          title: 送信トピック（rewards）を作成する
+          title: 送信トピック（prod）を作成する
           default: false
         kafka_topic_rewards:
           type: string
-          title: 送信トピック名（rewards）
+          title: 送信トピック名（prod）
           description: "リワードイベントを送信する Kafka トピック名（例: rewards）"
         kafka_topic_custom_comment:
           type: string
-          title: 追加メモ（自由入力、任意）
-          description: >-
-            チェックを入れて作成する各トピックのOpenMetadata登録用説明文に
-            追記されます。
+          title: 追加コメント (任意)
+          description: このトピックの用途や流すデータについて補足があれば入力してください
+          ui:widget: textarea
 
     - title: テスト設定
       description: "Pipeline で実施するテスト・スキャンを選択してください"
