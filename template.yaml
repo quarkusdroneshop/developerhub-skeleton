@@ -124,7 +124,7 @@ spec:
           type: string
           title: クラスタードメイン
           description: apps. から始まるドメイン名を記載
-          default: apps.ocp.pjdcb.sandbox3207.opentlc.com
+          default: apps.ocp.t6gss.sandbox1120.opentlc.com
 
     - title: 所有者情報
       required: [owner]
