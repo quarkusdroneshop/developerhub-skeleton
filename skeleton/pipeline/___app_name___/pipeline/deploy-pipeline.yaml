@@ -16,12 +16,6 @@ spec:
       name: IMAGE_TAG
       type: string
   results:
-    - name: junit
-      description: JUnit test result summary
-      value: $(tasks.pipeline-summary.results.junit)
-    - name: semgrep
-      description: Semgrep SAST result summary
-      value: $(tasks.pipeline-summary.results.semgrep)
     - name: report-url
       description: Test report URL
       value: $(tasks.pipeline-summary.results.report-url)
@@ -56,8 +50,6 @@ spec:
           value: "p/java,p/owasp-top-ten,p/secrets"
         - name: FAIL_ON_FINDINGS
           value: "false"
-        - name: OUTPUT_DIR
-          value: "target/semgrep-reports"
       workspaces:
         - name: source
           workspace: shared-workspace
@@ -144,7 +136,25 @@ spec:
         - name: CONTEXT_DIR
           value: .
         - name: GOALS
-          value: "clean verify -DskipITs"
+          value: "clean verify -DskipITs -Dtest=!ArchitectureTest"
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+        - name: maven-cache
+          workspace: maven-cache
+
+    - name: maven-arch-test
+      onError: continue
+      runAfter:
+        - maven-unit-test
+      taskRef:
+        kind: Task
+        name: maven-no-settings21
+      params:
+        - name: CONTEXT_DIR
+          value: .
+        - name: GOALS
+          value: "failsafe:integration-test failsafe:verify -Dit.test=ArchitectureTest -Dsurefire.skip=true"
       workspaces:
         - name: source
           workspace: shared-workspace
@@ -155,7 +165,7 @@ spec:
       onError: continue
       runAfter:
         - trivy-scan
-        - maven-unit-test
+        - maven-arch-test
       taskRef:
         kind: Task
         name: maven-no-settings21
@@ -173,7 +183,7 @@ spec:
     - name: maven-e2e-test
       onError: continue
       runAfter:
-        - maven-unit-test
+        - maven-arch-test
       taskRef:
         kind: Task
         name: maven-playwright
@@ -294,12 +304,8 @@ spec:
             APP=${{ values.app_name }}
             oc delete all -l app=$APP -n quarkusdroneshop-demo || true
             oc delete bc/$APP -n quarkusdroneshop-demo || true
-            oc new-build --binary --name=$APP --image=registry.access.redhat.com/ubi8/openjdk-21:1.20 -n quarkusdroneshop-demo
-            oc patch bc/$APP -n quarkusdroneshop-demo --type=json -p '[{"op":"replace","path":"/spec/strategy/sourceStrategy/from","value":{"kind":"DockerImage","name":"registry.access.redhat.com/ubi8/openjdk-21:1.20"}}]'
-            oc start-build $APP --from-dir=target/quarkus-app/ --follow -n quarkusdroneshop-demo
-            oc new-app $APP --name=$APP --allow-missing-images -n quarkusdroneshop-demo
-            oc expose svc/$APP -n quarkusdroneshop-demo || true
 
+            # ── env を先読みしてから new-app（余分なロールアウトを防ぐ）──────
             PGSQL_URL=$(oc get configmap droneshop-config -n quarkusdroneshop-demo -o=jsonpath='{.data.PGSQL_URL}')
             PGSQL_USER=$(oc get secret droneshopdb-pguser-droneshopadmin -n quarkusdroneshop-demo -o=jsonpath='{.data.user}' | base64 --decode)
             PGSQL_PASS=$(oc get secret droneshopdb-pguser-droneshopadmin -n quarkusdroneshop-demo -o=jsonpath='{.data.password}' | base64 --decode)
@@ -307,6 +313,12 @@ spec:
             QUARKUS_LOG_LEVEL=$(oc get configmap droneshop-config -n quarkusdroneshop-demo -o=jsonpath='{.data.QUARKUS_LOG_LEVEL}')
             QUARKUSDRONESHOP_LOG_LEVEL=$(oc get configmap droneshop-config -n quarkusdroneshop-demo -o=jsonpath='{.data.QUARKUSDRONESHOP_LOG_LEVEL}')
 
+            oc new-build --binary --name=$APP --image=registry.access.redhat.com/ubi8/openjdk-21:1.20 -n quarkusdroneshop-demo
+            oc patch bc/$APP -n quarkusdroneshop-demo --type=json -p '[{"op":"replace","path":"/spec/strategy/sourceStrategy/from","value":{"kind":"DockerImage","name":"registry.access.redhat.com/ubi8/openjdk-21:1.20"}}]'
+            oc start-build $APP --from-dir=target/quarkus-app/ --follow -n quarkusdroneshop-demo
+            oc new-app $APP --name=$APP --allow-missing-images -n quarkusdroneshop-demo
+
+            # ── すべての env を 1 コマンドでセット（deployment名は new-app が生成する "$APP"）──
             oc set env deployment/$APP \
               JAVA_OPTS_APPEND="-Dquarkus.profile=prod" \
               PGSQL_URL="$PGSQL_URL" \
@@ -320,6 +332,10 @@ spec:
             # ── liveness/readiness プローブ設定 ────────────────────
             oc set probe deployment/$APP --liveness --get-url=http://:8080/q/health/live --initial-delay-seconds=15 --period-seconds=15 -n quarkusdroneshop-demo
             oc set probe deployment/$APP --readiness --get-url=http://:8080/q/health/ready --initial-delay-seconds=10 --period-seconds=10 -n quarkusdroneshop-demo
+
+            # Expose Route for /q/health checks from other clusters
+            oc expose svc/$APP -n quarkusdroneshop-demo || true
+            oc patch route $APP -n quarkusdroneshop-demo --type=merge -p '{"spec":{"tls":{"termination":"edge","insecureEdgeTerminationPolicy":"Allow"}}}' || true
       workspaces:
         - name: source
           workspace: shared-workspace
