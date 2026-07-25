@@ -134,12 +134,13 @@
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-maven-plugin</artifactId>
         <version>${quarkus-plugin.version}</version>
+        <extensions>true</extensions>
         <executions>
           <execution>
             <goals>
+              <goal>build</goal>
               <goal>generate-code</goal>
               <goal>generate-code-tests</goal>
-              <goal>build</goal>
             </goals>
           </execution>
         </executions>
@@ -162,11 +163,14 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <version>${surefire-plugin.version}</version>
         <configuration>
+          <excludedGroups>e2e</excludedGroups>
           <includes>
             <include>**/*Test.java</include>
           </includes>
           <excludes>
             <exclude>**/*E2ETest.java</exclude>
+            <exclude>**/*E2E*.java</exclude>
+            <exclude>**/*IT.java</exclude>
           </excludes>
         </configuration>
       </plugin>
@@ -282,6 +286,14 @@
         </executions>
       </plugin>
 
+      <!-- Maven Clean -->
+      <plugin>
+        <artifactId>maven-clean-plugin</artifactId>
+        <configuration>
+          <failOnError>false</failOnError>
+        </configuration>
+      </plugin>
+
       <!-- Checkstyle -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -292,6 +304,20 @@
           <failsOnError>true</failsOnError>
           <consoleOutput>true</consoleOutput>
           <excludes>**/test/**/*</excludes>
+        </configuration>
+      </plugin>
+
+      <!-- SpotBugs -->
+      <plugin>
+        <groupId>com.github.spotbugs</groupId>
+        <artifactId>spotbugs-maven-plugin</artifactId>
+        <version>4.9.3.0</version>
+        <configuration>
+          <effort>Max</effort>
+          <threshold>Medium</threshold>
+          <xmlOutput>true</xmlOutput>
+          <xmlOutputDirectory>${project.build.directory}</xmlOutputDirectory>
+          <excludeFilterFile></excludeFilterFile>
         </configuration>
       </plugin>
 
