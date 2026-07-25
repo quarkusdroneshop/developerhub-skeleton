@@ -312,59 +312,12 @@ spec:
                     workspace: shared-workspace
 
               # ═══════════════════════════════════════════════════════════════
-              # Stage 2: 並列スキャン（全て fetch-repository 後に同時実行）
+              # Stage 2: 2系統の直列フロー(quarkusdroneshop-inventory の
+              # deploy-pipeline.yaml と同じ依存関係にしている)
               #
-              # gitleaks   → シークレット検出（最速: ~10s）
-              # semgrep    → SAST セキュリティスキャン（~30s）
-              # checkstyle → コードスタイルチェック（Maven 起動込み ~45s）
-              # pmd        → 静的解析（Maven 起動込み ~45s）
-              # trivy      → pom.xml を直接解析して CVE 検出（~40s）
-              #              ※ビルド不要のため maven-run(60s+) より先に終わる
-              #              → publish-test-report 実行時には trivy.txt が揃う
-              # maven-run  → コンパイル + ユニットテスト（最長: 60s+）
+              # 静的解析系: checkstyle → pmd → semgrep → gitleaks → trivy
+              # テスト系:   maven-unit-test → maven-arch-test → maven-e2e-test
               # ═══════════════════════════════════════════════════════════════
-
-              - name: gitleaks-scan
-                runAfter:
-                  - fetch-repository
-                when:
-                  - input: "$(params.ENABLE_GITLEAKS)"
-                    operator: in
-                    values: ["true"]
-                onError: continue
-                taskRef:
-                  kind: Task
-                  name: gitleaks-scan
-                params:
-                  - name: REPORT_FORMAT
-                    value: json
-                  - name: REPORT_PATH
-                    value: target/gitleaks-report.json
-                  - name: EXIT_CODE
-                    value: "0"
-                workspaces:
-                  - name: source
-                    workspace: shared-workspace
-
-              - name: semgrep-scan
-                runAfter:
-                  - fetch-repository
-                when:
-                  - input: "$(params.ENABLE_SEMGREP)"
-                    operator: in
-                    values: ["true"]
-                onError: continue
-                taskRef:
-                  kind: Task
-                  name: semgrep-scan
-                params:
-                  - name: RULES
-                    value: "p/java,p/owasp-top-ten,p/secrets"
-                  - name: FAIL_ON_FINDINGS
-                    value: "false"
-                workspaces:
-                  - name: source
-                    workspace: shared-workspace
 
               - name: checkstyle-run
                 runAfter:
@@ -388,7 +341,7 @@ spec:
 
               - name: pmd-run
                 runAfter:
-                  - fetch-repository
+                  - checkstyle-run
                 when:
                   - input: "$(params.ENABLE_PMD)"
                     operator: in
@@ -406,9 +359,51 @@ spec:
                   - name: source
                     workspace: shared-workspace
 
+              - name: semgrep-scan
+                runAfter:
+                  - pmd-run
+                when:
+                  - input: "$(params.ENABLE_SEMGREP)"
+                    operator: in
+                    values: ["true"]
+                onError: continue
+                taskRef:
+                  kind: Task
+                  name: semgrep-scan
+                params:
+                  - name: RULES
+                    value: "p/java,p/owasp-top-ten,p/secrets"
+                  - name: FAIL_ON_FINDINGS
+                    value: "false"
+                workspaces:
+                  - name: source
+                    workspace: shared-workspace
+
+              - name: gitleaks-scan
+                runAfter:
+                  - semgrep-scan
+                when:
+                  - input: "$(params.ENABLE_GITLEAKS)"
+                    operator: in
+                    values: ["true"]
+                onError: continue
+                taskRef:
+                  kind: Task
+                  name: gitleaks-scan
+                params:
+                  - name: REPORT_FORMAT
+                    value: json
+                  - name: REPORT_PATH
+                    value: target/gitleaks-report.json
+                  - name: EXIT_CODE
+                    value: "0"
+                workspaces:
+                  - name: source
+                    workspace: shared-workspace
+
               - name: trivy-scan
                 runAfter:
-                  - fetch-repository
+                  - gitleaks-scan
                 when:
                   - input: "$(params.ENABLE_TRIVY)"
                     operator: in
@@ -440,7 +435,23 @@ spec:
                   - name: CONTEXT_DIR
                     value: .
                   - name: GOALS
-                    value: "clean test"
+                    value: "clean verify -DskipITs -Dtest=!ArchitectureTest"
+                workspaces:
+                  - name: source
+                    workspace: shared-workspace
+
+              - name: maven-arch-test
+                onError: continue
+                runAfter:
+                  - maven-unit-test
+                taskRef:
+                  kind: Task
+                  name: maven-no-settings21
+                params:
+                  - name: CONTEXT_DIR
+                    value: .
+                  - name: GOALS
+                    value: "failsafe:integration-test failsafe:verify -Dit.test=ArchitectureTest -Dsurefire.skip=true"
                 workspaces:
                   - name: source
                     workspace: shared-workspace
@@ -448,7 +459,8 @@ spec:
               - name: spotbugs-run
                 onError: continue
                 runAfter:
-                  - maven-unit-test
+                  - trivy-scan
+                  - maven-arch-test
                 taskRef:
                   kind: Task
                   name: maven-no-settings21
@@ -464,15 +476,15 @@ spec:
               - name: maven-e2e-test
                 onError: continue
                 runAfter:
-                  - spotbugs-run
+                  - maven-arch-test
                 taskRef:
                   kind: Task
-                  name: maven-no-settings21
+                  name: maven-playwright
                 params:
                   - name: CONTEXT_DIR
                     value: .
                   - name: GOALS
-                    value: "test-compile failsafe:integration-test failsafe:verify"
+                    value: "test-compile failsafe:integration-test failsafe:verify -Dsurefire.skip=true"
                 workspaces:
                   - name: source
                     workspace: shared-workspace
@@ -481,6 +493,7 @@ spec:
                 onError: continue
                 runAfter:
                   - wapiti-scan
+                  - spotbugs-run
                 taskRef:
                   kind: Task
                   name: maven-no-settings21
@@ -521,7 +534,7 @@ spec:
                     workspace: shared-workspace
 
               # ═══════════════════════════════════════════════════════════════
-              # Stage 4: レポート公開（publish と summary は並列）
+              # Stage 4: レポート公開（publish-test-report → pipeline-summary の順）
               # ═══════════════════════════════════════════════════════════════
 
               - name: publish-test-report
@@ -541,7 +554,7 @@ spec:
 
               - name: pipeline-summary
                 runAfter:
-                  - print-csv-table
+                  - publish-test-report
                 taskRef:
                   kind: Task
                   name: pipeline-summary
@@ -568,7 +581,7 @@ spec:
                     value: $(tasks.publish-test-report.results.report-url)
 
               # ═══════════════════════════════════════════════════════════════
-              # Stage 5: デプロイ（publish-test-report 完了後）
+              # Stage 5: デプロイ（maven-e2e-test 完了後）
               # ═══════════════════════════════════════════════════════════════
 
               - name: push-oc-apps
