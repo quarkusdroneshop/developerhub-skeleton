@@ -1,0 +1,63 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: gitleaks-scan
+  namespace: quarkusdroneshop-cicd
+spec:
+  description: >
+    Gitleaks によるシークレットスキャン。
+    Git リポジトリのソースコードから認証情報・APIキー等の漏洩を検出する。
+  params:
+    - name: REPORT_FORMAT
+      description: レポート出力形式 (json / csv / junit / sarif)
+      type: string
+      default: "json"
+    - name: REPORT_PATH
+      description: レポート出力パス（workspace 内相対パス）
+      type: string
+      default: "target/gitleaks-report.json"
+    - name: EXIT_CODE
+      description: "検出時の終了コード (0=継続 / 1=失敗)"
+      type: string
+      default: "0"
+  workspaces:
+    - name: source
+      description: スキャン対象のソースコード
+  steps:
+    - name: scan
+      image: ghcr.io/gitleaks/gitleaks:latest
+      workingDir: $(workspaces.source.path)
+      env:
+        - name: REPORT_PATH
+          value: $(workspaces.source.path)/$(params.REPORT_PATH)
+        - name: EXIT_CODE_PARAM
+          value: $(params.EXIT_CODE)
+        - name: REPORT_FORMAT
+          value: $(params.REPORT_FORMAT)
+      script: |
+        #!/bin/sh
+        set -e
+
+        echo "=============================================="
+        echo " Gitleaks シークレットスキャン開始"
+        echo "=============================================="
+
+        mkdir -p "$(dirname "${REPORT_PATH}")"
+        chmod -R 777 "$(dirname "${REPORT_PATH}")"
+
+        gitleaks detect \
+          --source "$(workspaces.source.path)" \
+          --report-format "${REPORT_FORMAT}" \
+          --report-path "${REPORT_PATH}" \
+          --exit-code "${EXIT_CODE_PARAM}" \
+          --no-git \
+          --verbose \
+          || true
+
+        echo "=============================================="
+        if [ -f "${REPORT_PATH}" ]; then
+          COUNT=$(grep -c '"RuleID"' "${REPORT_PATH}" 2>/dev/null || echo "0")
+          echo " 検出件数: ${COUNT}"
+        fi
+        echo " Gitleaks スキャン完了"
+        echo "=============================================="

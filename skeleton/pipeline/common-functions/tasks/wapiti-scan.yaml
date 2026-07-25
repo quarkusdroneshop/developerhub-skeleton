@@ -1,0 +1,149 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: wapiti-scan
+  namespace: quarkusdroneshop-cicd
+spec:
+  description: >
+    デプロイ済みアプリの OpenShift Route URL を取得して Wapiti DAST スキャンを実行する。
+    oc CLI で Route URL を取得後、pip で wapiti3 をインストールしてスキャンする。
+    スキャン結果は target/wapiti.json に出力する。
+  params:
+    - name: APP_NAME
+      description: OpenShift Route 名（oc get route <APP_NAME>）
+      type: string
+    - name: NAMESPACE
+      description: デプロイ先 Namespace
+      type: string
+      default: "quarkusdroneshop-demo"
+    - name: MAX_SCAN_TIME
+      description: スキャン最大時間（秒）
+      type: string
+      default: "120"
+  workspaces:
+    - name: source
+      description: レポート出力先ワークスペース
+  steps:
+    - name: scan
+      image: quay.io/openshift/origin-cli:latest
+      env:
+        - name: APP_NAME
+          value: $(params.APP_NAME)
+        - name: NAMESPACE
+          value: $(params.NAMESPACE)
+        - name: MAX_SCAN_TIME
+          value: $(params.MAX_SCAN_TIME)
+        - name: REPORT_DIR
+          value: $(workspaces.source.path)/target
+      script: |
+        #!/bin/bash
+
+        echo "=============================================="
+        echo " wapiti-scan: 開始"
+        echo " APP_NAME   : ${APP_NAME}"
+        echo " NAMESPACE  : ${NAMESPACE}"
+        echo "=============================================="
+
+        mkdir -p "${REPORT_DIR}"
+        chmod -R 777 "${REPORT_DIR}"
+
+        # ── 空の JSON をあらかじめ出力（失敗時の後続タスク保護） ──
+        printf '%s\n' '{"info":{"version":"","date":"","target":"","scope":""},"vulnerabilities":{},"anomalies":{},"additionals":{}}' \
+          > "${REPORT_DIR}/wapiti.json"
+
+        # ── Step 1: Route URL 取得 ──────────────────────────────────
+        echo ""
+        echo "--- [1/4] Route URL 取得 ---"
+        echo "oc whoami: $(oc whoami 2>&1 || echo 'N/A')"
+
+        echo "Route 一覧:"
+        oc get route -n "${NAMESPACE}" 2>&1 || echo "Route 取得不可"
+
+        HOST=$(oc get route "${APP_NAME}" \
+          -n "${NAMESPACE}" \
+          -o jsonpath='{.spec.host}' 2>/dev/null || true)
+
+        if [ -z "${HOST}" ]; then
+          echo "WARNING: Route '${APP_NAME}' が見つかりません。スキャンをスキップします。"
+          exit 0
+        fi
+
+        TARGET_URL="http://${HOST}"
+        echo "対象 URL: ${TARGET_URL}"
+
+        # ── Step 2: アプリ起動確認 ──────────────────────────────────
+        echo ""
+        echo "--- [2/4] アプリ疎通確認 ---"
+        ALIVE=false
+        for i in $(seq 1 12); do
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+            --max-time 10 "${TARGET_URL}" 2>/dev/null || echo "000")
+          echo "  試行 ${i}/12: HTTP ${HTTP_CODE}"
+          if [ "${HTTP_CODE}" != "000" ]; then
+            ALIVE=true
+            break
+          fi
+          sleep 10
+        done
+
+        if [ "${ALIVE}" = "false" ]; then
+          echo "WARNING: アプリが応答しません。スキャンをスキップします。"
+          exit 0
+        fi
+
+        # ── Step 3: wapiti3 インストール ────────────────────────────
+        echo ""
+        echo "--- [3/4] wapiti3 インストール ---"
+        python3 --version 2>&1 || { echo "ERROR: python3 が見つかりません"; exit 0; }
+
+        # pip が無い場合は dnf または ensurepip で取得
+        if ! python3 -m pip --version > /dev/null 2>&1; then
+          echo "pip が見つからないため dnf でインストールします..."
+          dnf install -y python3-pip --quiet 2>&1 || \
+            python3 -m ensurepip --upgrade 2>&1 || \
+            { echo "ERROR: pip のインストールに失敗しました"; exit 0; }
+        fi
+        echo "pip バージョン: $(python3 -m pip --version)"
+
+        python3 -m pip install wapiti3 --quiet --no-cache-dir 2>&1
+        export PATH="$HOME/.local/bin:/usr/local/bin:$PATH"
+
+        if ! command -v wapiti > /dev/null 2>&1; then
+          # pip の場所を探す
+          WAPITI_PATH=$(python3 -c "import site; print(site.getusersitepackages())" 2>/dev/null || true)
+          echo "wapiti を探索中: ${WAPITI_PATH}"
+          find / -name "wapiti" -type f 2>/dev/null | head -3
+          echo "ERROR: wapiti インストール失敗"; exit 0
+        fi
+        wapiti --version 2>&1
+
+        # ── Step 4: スキャン実行 ────────────────────────────────────
+        echo ""
+        echo "--- [4/4] Wapiti DAST スキャン実行 ---"
+        echo "対象: ${TARGET_URL}"
+        echo "最大スキャン時間: ${MAX_SCAN_TIME} 秒"
+
+        wapiti \
+          -u "${TARGET_URL}" \
+          -f json \
+          -o "${REPORT_DIR}/wapiti.json" \
+          --scope page \
+          --max-links-per-page 20 \
+          --max-scan-time "${MAX_SCAN_TIME}" \
+          --flush-session \
+          2>&1
+        WAPITI_EXIT=$?
+
+        echo ""
+        echo "=============================================="
+        echo " wapiti 終了コード: ${WAPITI_EXIT}"
+        if [ -f "${REPORT_DIR}/wapiti.json" ]; then
+          SIZE=$(wc -c < "${REPORT_DIR}/wapiti.json")
+          echo " wapiti.json: ${SIZE} bytes"
+        else
+          echo " WARNING: wapiti.json が生成されませんでした (空 JSON を使用)"
+          printf '%s\n' '{"info":{"version":"","date":"","target":"","scope":""},"vulnerabilities":{},"anomalies":{},"additionals":{}}' \
+            > "${REPORT_DIR}/wapiti.json"
+        fi
+        echo " wapiti-scan: 完了"
+        echo "=============================================="

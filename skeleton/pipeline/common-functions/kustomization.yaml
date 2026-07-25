@@ -1,0 +1,18 @@
+resources:
+- pvc/maven-cache-pvc.yaml
+- rbac/pipeline-edit-demo-rolebinding.yaml
+- tasks/git-clone.yaml
+- tasks/maven11.yaml
+- tasks/maven17.yaml
+- tasks/maven21.yaml
+- tasks/push-app.yaml
+- tasks/publish-test-report.yaml
+- tasks/print-csv-table.yaml
+- tasks/semgrep-scan.yaml
+- tasks/maven21-playwright.yaml
+- tasks/playwright-e2e.yaml
+- tasks/gitleaks-scan.yaml
+- tasks/trivy-scan.yaml
+- tasks/wapiti-scan.yaml
+- tasks/pipeline-summary.yaml
+- tasks/nodejs-test.yaml

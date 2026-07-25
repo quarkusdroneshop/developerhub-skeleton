@@ -1,0 +1,39 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: maven-playwright
+  namespace: quarkusdroneshop-cicd
+spec:
+  description: >
+    Playwright ブラウザ依存ライブラリ込みの Maven タスク。
+    maven-failsafe-plugin で Playwright E2E テストを実行するために使用する。
+    mcr.microsoft.com/playwright/java イメージにはブラウザ(Chromium/Firefox/WebKit)と
+    必要な OS ライブラリ(libatk/libdrm/libxkbcommon 等)が含まれている。
+  params:
+    - name: GOALS
+      description: Maven goals to run
+      type: string
+    - name: CONTEXT_DIR
+      description: Directory containing the Maven project
+      type: string
+      default: "."
+  workspaces:
+    - name: source
+      description: The workspace containing the Maven project.
+    - name: maven-cache
+      description: Maven local repository cache (.m2) to avoid repeated downloads
+      optional: true
+  steps:
+    - name: mvn
+      image: mcr.microsoft.com/playwright/java:v1.50.0-noble
+      workingDir: $(workspaces.source.path)/$(params.CONTEXT_DIR)
+      script: |
+        #!/bin/bash
+        echo "Running mvn $(params.GOALS)"
+        if [ "$(workspaces.maven-cache.bound)" = "true" ]; then
+          REPO_DIR="$(workspaces.maven-cache.path)/repository"
+          mkdir -p "${REPO_DIR}"
+          mvn $(params.GOALS) -Dmaven.repo.local="${REPO_DIR}"
+        else
+          mvn $(params.GOALS)
+        fi

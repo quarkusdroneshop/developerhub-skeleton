@@ -1,0 +1,74 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: git-clone
+  namespace: quarkusdroneshop-cicd
+  labels:
+    app.kubernetes.io/version: "1.0"
+  annotations:
+    tekton.dev/displayName: "git clone"
+    tekton.dev/tags: git
+spec:
+  description: Clone Git repository into workspace
+  workspaces:
+    - name: output
+      description: Workspace where the repo will be cloned
+  params:
+    - name: url
+      type: string
+      description: Git repository URL
+    - name: revision
+      type: string
+      default: ""
+      description: Git revision (branch/tag/sha)
+    - name: depth
+      type: string
+      default: "1"
+      description: Clone depth
+    - name: subdirectory
+      type: string
+      default: ""
+      description: Subdirectory in workspace
+    - name: deleteExisting
+      type: string
+      default: "true"
+    - name: verbose
+      type: string
+      default: "true"
+    - name: gitInitImage
+      type: string
+      default: "registry.access.redhat.com/hi/git:latest"
+  results:
+    - name: commit
+      description: Checked out commit SHA
+    - name: url
+      description: Repository URL
+  steps:
+    - name: clone
+      image: $(params.gitInitImage)
+      workingDir: $(workspaces.output.path)
+      script: |
+        #!/usr/bin/env bash
+        set -eu
+        if [[ "$(params.verbose)" == "true" ]]; then
+          set -x
+        fi
+        CHECKOUT_DIR="$(workspaces.output.path)/$(params.subdirectory)"
+        if [[ "$(params.deleteExisting)" == "true" ]]; then
+          chmod -R 777 "${CHECKOUT_DIR}" 2>/dev/null || true
+          rm -rf "${CHECKOUT_DIR}" || true
+        fi
+        mkdir -p "${CHECKOUT_DIR}"
+        git clone \
+          --depth="$(params.depth)" \
+          "$(params.url)" \
+          "${CHECKOUT_DIR}"
+        git config --global --add safe.directory "${CHECKOUT_DIR}"
+        cd "${CHECKOUT_DIR}"
+        RESULT_SHA="$(git rev-parse HEAD)"
+        if [[ -n "$(params.revision)" ]]; then
+          git checkout "$(params.revision)"
+        fi
+        RESULT_SHA="$(git rev-parse HEAD)"
+        echo -n "${RESULT_SHA}" > "$(results.commit.path)"
+        echo -n "$(params.url)" > "$(results.url.path)"

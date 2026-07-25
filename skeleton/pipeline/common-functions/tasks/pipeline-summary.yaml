@@ -1,0 +1,134 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: pipeline-summary
+  namespace: quarkusdroneshop-cicd
+spec:
+  description: >
+    各タスクの結果（テスト・Semgrep・OWASP・レポートURL）を集約し、
+    パイプライン出力に表形式で表示する。
+  params:
+    - name: APP_NAME
+      type: string
+    - name: TEST_TOTAL
+      type: string
+      default: "-"
+    - name: TEST_PASSED
+      type: string
+      default: "-"
+    - name: TEST_FAILURES
+      type: string
+      default: "-"
+    - name: TEST_ERRORS
+      type: string
+      default: "-"
+    - name: SEMGREP_HIGH
+      type: string
+      default: "-"
+    - name: SEMGREP_MEDIUM
+      type: string
+      default: "-"
+    - name: SEMGREP_LOW
+      type: string
+      default: "-"
+    - name: SEMGREP_TOTAL
+      type: string
+      default: "-"
+    - name: OWASP_CRITICAL
+      type: string
+      default: "-"
+    - name: OWASP_HIGH
+      type: string
+      default: "-"
+    - name: OWASP_MEDIUM
+      type: string
+      default: "-"
+    - name: OWASP_LOW
+      type: string
+      default: "-"
+    - name: OWASP_TOTAL
+      type: string
+      default: "-"
+    - name: REPORT_URL
+      type: string
+      default: "-"
+  results:
+    - name: report-url
+      description: Test report URL
+  steps:
+    - name: print-summary
+      image: python:3.12-slim
+      script: |
+        #!/usr/bin/env python3
+        import json, os
+
+        app          = "$(params.APP_NAME)"
+        report_url   = "$(params.REPORT_URL)"
+
+        test_total    = "$(params.TEST_TOTAL)"
+        test_passed   = "$(params.TEST_PASSED)"
+        test_failures = "$(params.TEST_FAILURES)"
+        test_errors   = "$(params.TEST_ERRORS)"
+
+        sg_high   = "$(params.SEMGREP_HIGH)"
+        sg_medium = "$(params.SEMGREP_MEDIUM)"
+        sg_low    = "$(params.SEMGREP_LOW)"
+        sg_total  = "$(params.SEMGREP_TOTAL)"
+
+        ow_critical = "$(params.OWASP_CRITICAL)"
+        ow_high     = "$(params.OWASP_HIGH)"
+        ow_medium   = "$(params.OWASP_MEDIUM)"
+        ow_low      = "$(params.OWASP_LOW)"
+        ow_total    = "$(params.OWASP_TOTAL)"
+
+        def _int(v):
+            try: return int(v)
+            except: return None
+
+        def status_test():
+            f, e = _int(test_failures), _int(test_errors)
+            if f is None: return "N/A"
+            return "PASS" if (f == 0 and e == 0) else "FAIL"
+
+        def status_semgrep():
+            h = _int(sg_high)
+            if h is None: return "N/A"
+            return "PASS" if h == 0 else "WARN"
+
+        def status_owasp():
+            if ow_critical == "検証不可": return "検証不可"
+            c, h = _int(ow_critical), _int(ow_high)
+            if c is None: return "N/A"
+            return "PASS" if (c == 0 and h == 0) else "WARN"
+
+        def sep(widths):
+            return "+" + "+".join("-" * (w + 2) for w in widths) + "+"
+
+        def row(cells, widths):
+            return "|" + "|".join(f" {str(c):<{widths[i]}} " for i, c in enumerate(cells)) + "|"
+
+        def table(rows):
+            col = max(len(r) for r in rows)
+            rows = [list(r) + [""] * (col - len(r)) for r in rows]
+            widths = [max(len(str(r[i])) for r in rows) for i in range(col)]
+            lines = [sep(widths)]
+            for i, r in enumerate(rows):
+                lines.append(row(r, widths))
+                if i == 0:
+                    lines.append(sep(widths))
+            lines.append(sep(widths))
+            return "\n".join(lines)
+
+        from datetime import datetime, timezone, timedelta
+        JST = timezone(timedelta(hours=9))
+        now_str = datetime.now(JST).strftime("%Y-%m-%d %H:%M:%S JST")
+
+        # ── テスト結果URL ──────────────────────────────────────────────
+        print()
+        print(table([
+            ["テスト結果URL",    report_url],
+        ]))
+        print()
+
+        # ── results への書き込み ───────────────────────────────────────
+        open("$(results.report-url.path)", "w").write(report_url)

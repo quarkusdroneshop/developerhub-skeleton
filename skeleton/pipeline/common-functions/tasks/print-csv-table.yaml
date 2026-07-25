@@ -1,0 +1,166 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: print-csv-table
+  namespace: quarkusdroneshop-cicd
+spec:
+  description: >
+    Maven Surefire XML レポートを解析してテスト結果を表形式でログに出力する共通タスク。
+    CSV_FILE を指定した場合はそのファイルを表示し、省略時は target/surefire-reports/ を自動解析する。
+  params:
+    - name: CSV_FILE
+      description: Workspace 内の CSV ファイルパス（省略時は surefire XML を自動解析）
+      type: string
+      default: ""
+    - name: CONTEXT_DIR
+      description: Maven プロジェクトのディレクトリ（shared-workspace 内の相対パス）
+      type: string
+      default: "."
+    - name: TITLE
+      description: テーブルのタイトル
+      type: string
+      default: "テスト結果サマリー"
+  workspaces:
+    - name: source
+      description: Maven プロジェクトが格納されているワークスペース
+  results:
+    - name: total-tests
+      description: Total test count
+    - name: passed
+      description: Passed test count
+    - name: failures
+      description: Failed test count
+    - name: errors
+      description: Error test count
+  steps:
+    - name: print-table
+      image: python:3.12-slim
+      script: |
+        #!/usr/bin/env python3
+        import csv
+        import os
+        import sys
+        import glob
+        import xml.etree.ElementTree as ET
+
+        base_dir = os.path.join("$(workspaces.source.path)", "$(params.CONTEXT_DIR)")
+        csv_file = "$(params.CSV_FILE)"
+        title    = "$(params.TITLE)"
+
+        def print_sep(widths):
+            print("+" + "+".join("-" * (w + 2) for w in widths) + "+")
+
+        def print_row(row, widths):
+            print("|" + "|".join(f" {str(v):<{widths[i]}} " for i, v in enumerate(row)) + "|")
+
+        def render_table(rows, title=""):
+            if not rows:
+                print("[print-csv-table] 表示するデータがありません。")
+                return
+            col_count = max(len(r) for r in rows)
+            rows = [list(r) + [""] * (col_count - len(r)) for r in rows]
+            widths = [max(len(str(r[i])) for r in rows) for i in range(col_count)]
+            if title:
+                total = sum(w + 3 for w in widths) + 1
+                print("=" * total)
+                print(f" {title}")
+            print_sep(widths)
+            print_row(rows[0], widths)
+            print_sep(widths)
+            for row in rows[1:]:
+                print_row(row, widths)
+            print_sep(widths)
+
+        total_tests = total_passed = total_failures = total_errors = 0
+
+        def write_results(total, passed, failures, errors):
+            with open("$(results.total-tests.path)", "w") as f: f.write(str(total))
+            with open("$(results.passed.path)",      "w") as f: f.write(str(passed))
+            with open("$(results.failures.path)",    "w") as f: f.write(str(failures))
+            with open("$(results.errors.path)",      "w") as f: f.write(str(errors))
+
+        try:
+            # --- CSV モード ---
+            if csv_file:
+                csv_path = os.path.join(base_dir, csv_file)
+                if not os.path.exists(csv_path):
+                    print(f"[print-csv-table] CSV ファイルが見つかりません: {csv_path}")
+                    sys.exit(0)
+                with open(csv_path, newline="", encoding="utf-8") as f:
+                    rows = list(csv.reader(f))
+                render_table(rows, title)
+                sys.exit(0)
+
+            # --- Surefire / Failsafe XML モード（分離表示） ---
+            header = ["テストスイート", "テスト数", "成功", "失敗", "エラー", "スキップ", "時間(秒)"]
+
+            def parse_xml_dir(xml_dir):
+                xml_files = glob.glob(os.path.join(xml_dir, "TEST-*.xml"))
+                rows = [header]
+                t = p = f = e = s = 0
+                elapsed = 0.0
+                for xml_file in sorted(xml_files):
+                    try:
+                        root = ET.parse(xml_file).getroot()
+                        name     = root.get("name", os.path.basename(xml_file))
+                        tests    = int(root.get("tests",    0))
+                        failures = int(root.get("failures", 0))
+                        errors   = int(root.get("errors",   0))
+                        skipped  = int(root.get("skipped",  0))
+                        time_val = float(root.get("time",   0.0))
+                        passed   = tests - failures - errors - skipped
+                        parts    = name.split(".")
+                        short    = ".".join(parts[-2:]) if len(parts) >= 2 else name
+                        rows.append([short, tests, passed, failures, errors, skipped, f"{time_val:.2f}"])
+                        t += tests; p += passed; f += failures; e += errors
+                        s += skipped; elapsed += time_val
+                    except Exception as ex:
+                        print(f"[print-csv-table] 警告: {xml_file} の解析に失敗: {ex}")
+                if len(rows) > 1:
+                    rows.append(["合計", t, p, f, e, s, f"{elapsed:.2f}"])
+                return rows, t, p, f, e
+
+            surefire_dir  = os.path.join(base_dir, "target", "surefire-reports")
+            failsafe_dir  = os.path.join(base_dir, "target", "failsafe-reports")
+
+            su_rows, su_t, su_p, su_f, su_e = parse_xml_dir(surefire_dir)
+            fa_rows, fa_t, fa_p, fa_f, fa_e = parse_xml_dir(failsafe_dir)
+
+            if su_t == 0 and fa_t == 0:
+                print("[print-csv-table] surefire / failsafe レポートが見つかりません。")
+                print(f"  surefire : {surefire_dir}")
+                print(f"  failsafe : {failsafe_dir}")
+                sys.exit(0)
+
+            if su_t > 0:
+                render_table(su_rows, "ユニットテスト (Surefire)")
+                if su_f > 0 or su_e > 0:
+                    print(f"  !! 失敗: {su_f} / エラー: {su_e}")
+                print()
+
+            # 統合テストは対象クラスのみ表示
+            INTEGRATION_TESTS = {"ArchitectureTest", "WebTestItemE2EWrapperIT", "OrderFlowE2ETest"}
+            if fa_t > 0:
+                fa_filtered = [header] + [
+                    r for r in fa_rows[1:-1]
+                    if any(t in str(r[0]) for t in INTEGRATION_TESTS)
+                ]
+                if len(fa_rows) > 1:
+                    fa_filtered.append(fa_rows[-1])
+                render_table(fa_filtered if len(fa_filtered) > 1 else fa_rows, "統合テスト / E2E (Failsafe)")
+                if fa_f > 0 or fa_e > 0:
+                    print(f"  !! 失敗: {fa_f} / エラー: {fa_e}")
+                print()
+
+            total_tests    = su_t + fa_t
+            total_passed   = su_p + fa_p
+            total_failures = su_f + fa_f
+            total_errors   = su_e + fa_e
+
+            if total_failures > 0 or total_errors > 0:
+                print(f"[print-csv-table] 合計失敗: {total_failures} / エラー: {total_errors}")
+
+        except Exception as e:
+            print(f"[print-csv-table] 予期しないエラー: {e}")
+        finally:
+            write_results(total_tests, total_passed, total_failures, total_errors)

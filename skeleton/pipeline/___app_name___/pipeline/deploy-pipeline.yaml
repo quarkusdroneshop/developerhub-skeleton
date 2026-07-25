@@ -1,13 +1,14 @@
 apiVersion: tekton.dev/v1
 kind: Pipeline
 metadata:
-  name: build-and-push-quarkusdroneshop-reward
+  name: build-and-push-quarkusdroneshop-${{ values.app_name }}
   namespace: quarkusdroneshop-cicd
   labels:
-    app: quarkusdroneshop-reword
-    app.kubernetes.io/instance: quarkusdroneshop-reword
+    app: quarkusdroneshop-${{ values.app_name }}
+    app.kubernetes.io/instance: quarkusdroneshop-${{ values.app_name }}
     app.kubernetes.io/part-of: quarkusdroneshop
-    backstage.io/kubernetes-id: quarkusdroneshop-reword
+    tekton.dev/pipeline: build-and-push-quarkusdroneshop-${{ values.app_name }}
+    backstage.io/kubernetes-id: quarkusdroneshop-${{ values.app_name }}
 spec:
   params:
     - default: latest
@@ -32,7 +33,7 @@ spec:
     - name: fetch-repository
       params:
         - name: url
-          value: 'https://github.com/quarkusdroneshop/quarkusdroneshop-reward'
+          value: 'https://github.com/quarkusdroneshop/quarkusdroneshop-${{ values.app_name }}'
         - name: subdirectory
           value: ''
         - name: deleteExisting
@@ -196,7 +197,7 @@ spec:
         name: wapiti-scan
       params:
         - name: APP_NAME
-          value: "reward"
+          value: "${{ values.app_name }}"
         - name: NAMESPACE
           value: "quarkusdroneshop-demo"
       workspaces:
@@ -231,7 +232,7 @@ spec:
         name: print-csv-table
       params:
         - name: TITLE
-          value: "reward テスト結果サマリー"
+          value: "${{ values.app_name }} テスト結果サマリー"
       workspaces:
         - name: source
           workspace: shared-workspace
@@ -244,7 +245,7 @@ spec:
         name: publish-test-report
       params:
         - name: APP_NAME
-          value: reward
+          value: ${{ values.app_name }}
         - name: CONTEXT_DIR
           value: .
       workspaces:
@@ -259,7 +260,7 @@ spec:
         name: pipeline-summary
       params:
         - name: APP_NAME
-          value: reward
+          value: ${{ values.app_name }}
         - name: TEST_TOTAL
           value: $(tasks.print-csv-table.results.total-tests)
         - name: TEST_PASSED
@@ -290,13 +291,15 @@ spec:
             #!/bin/bash
             set -e
 
-            oc delete all -l app=reward -n quarkusdroneshop-demo || true
-            oc delete bc/reward -n quarkusdroneshop-demo || true
-            RUNNER_JAR=$(ls target/*-runner.jar | head -1)
-            oc new-build --binary --name=reward --docker-image=registry.access.redhat.com/ubi8/openjdk-21:1.20 -n quarkusdroneshop-demo
-            oc patch bc/reward -n quarkusdroneshop-demo --type=json -p '[{"op":"replace","path":"/spec/strategy/sourceStrategy/from","value":{"kind":"DockerImage","name":"registry.access.redhat.com/ubi8/openjdk-21:1.20"}}]'
-            oc start-build reward --from-file="$RUNNER_JAR" --follow -n quarkusdroneshop-demo
-            oc new-app reward --name=reward --allow-missing-images -n quarkusdroneshop-demo
+            APP=${{ values.app_name }}
+            oc delete all -l app=$APP -n quarkusdroneshop-demo || true
+            oc delete bc/$APP -n quarkusdroneshop-demo || true
+            oc new-build --binary --name=$APP --image=registry.access.redhat.com/ubi8/openjdk-21:1.20 -n quarkusdroneshop-demo
+            oc patch bc/$APP -n quarkusdroneshop-demo --type=json -p '[{"op":"replace","path":"/spec/strategy/sourceStrategy/from","value":{"kind":"DockerImage","name":"registry.access.redhat.com/ubi8/openjdk-21:1.20"}}]'
+            oc start-build $APP --from-dir=target/quarkus-app/ --follow -n quarkusdroneshop-demo
+            oc new-app $APP --name=$APP --allow-missing-images -n quarkusdroneshop-demo
+            oc expose svc/$APP -n quarkusdroneshop-demo || true
+
             PGSQL_URL=$(oc get configmap droneshop-config -n quarkusdroneshop-demo -o=jsonpath='{.data.PGSQL_URL}')
             PGSQL_USER=$(oc get secret droneshopdb-pguser-droneshopadmin -n quarkusdroneshop-demo -o=jsonpath='{.data.user}' | base64 --decode)
             PGSQL_PASS=$(oc get secret droneshopdb-pguser-droneshopadmin -n quarkusdroneshop-demo -o=jsonpath='{.data.password}' | base64 --decode)
@@ -304,7 +307,7 @@ spec:
             QUARKUS_LOG_LEVEL=$(oc get configmap droneshop-config -n quarkusdroneshop-demo -o=jsonpath='{.data.QUARKUS_LOG_LEVEL}')
             QUARKUSDRONESHOP_LOG_LEVEL=$(oc get configmap droneshop-config -n quarkusdroneshop-demo -o=jsonpath='{.data.QUARKUSDRONESHOP_LOG_LEVEL}')
 
-            oc set env deployment/reward \
+            oc set env deployment/$APP \
               JAVA_OPTS_APPEND="-Dquarkus.profile=prod" \
               PGSQL_URL="$PGSQL_URL" \
               PGSQL_USER="$PGSQL_USER" \
@@ -313,6 +316,10 @@ spec:
               QUARKUS_LOG_LEVEL="$QUARKUS_LOG_LEVEL" \
               QUARKUSDRONESHOP_LOG_LEVEL="$QUARKUSDRONESHOP_LOG_LEVEL" \
               -n quarkusdroneshop-demo
+
+            # ── liveness/readiness プローブ設定 ────────────────────
+            oc set probe deployment/$APP --liveness --get-url=http://:8080/q/health/live --initial-delay-seconds=15 --period-seconds=15 -n quarkusdroneshop-demo
+            oc set probe deployment/$APP --readiness --get-url=http://:8080/q/health/ready --initial-delay-seconds=10 --period-seconds=10 -n quarkusdroneshop-demo
       workspaces:
         - name: source
           workspace: shared-workspace
@@ -320,23 +327,24 @@ spec:
 apiVersion: tekton.dev/v1
 kind: PipelineRun
 metadata:
-  name: build-and-push-quarkusdroneshop-reward
+  name: build-and-push-quarkusdroneshop-${{ values.app_name }}
   namespace: quarkusdroneshop-cicd
   labels:
-    app: quarkusdroneshop-reword
-    app.kubernetes.io/instance: quarkusdroneshop-reword
+    app: quarkusdroneshop-${{ values.app_name }}
+    app.kubernetes.io/instance: quarkusdroneshop-${{ values.app_name }}
     app.kubernetes.io/part-of: quarkusdroneshop
-    backstage.io/kubernetes-id: quarkusdroneshop-reword
+    tekton.dev/pipeline: build-and-push-quarkusdroneshop-${{ values.app_name }}
+    backstage.io/kubernetes-id: quarkusdroneshop-${{ values.app_name }}
 spec:
   pipelineRef:
-    name: build-and-push-quarkusdroneshop-reward
+    name: build-and-push-quarkusdroneshop-${{ values.app_name }}
   params:
     - name: IMAGE_TAG
       value: latest
   workspaces:
     - name: shared-workspace
       persistentVolumeClaim:
-        claimName: quarkusdroneshop-reword-shared-workspace-pvc
+        claimName: quarkusdroneshop-${{ values.app_name }}-shared-workspace-pvc
     - name: maven-cache
       persistentVolumeClaim:
         claimName: maven-cache-pvc

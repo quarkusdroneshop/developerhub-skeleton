@@ -1,12 +1,14 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: quarkusdroneshop-reward-shared-workspace-pvc
+  name: maven-cache-pvc
   namespace: quarkusdroneshop-cicd
+  labels:
+    app.kubernetes.io/part-of: quarkusdroneshop
 spec:
-  storageClassName: gp3-csi   # ← 追加
   accessModes:
     - ReadWriteOnce
+  storageClassName: gp3-csi
   resources:
     requests:
       storage: 5Gi

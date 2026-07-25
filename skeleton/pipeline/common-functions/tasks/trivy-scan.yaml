@@ -1,0 +1,81 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: trivy-scan
+  namespace: quarkusdroneshop-cicd
+spec:
+  description: >
+    Trivy による SCA スキャン。
+    pom.xml / package.json の依存ライブラリの CVE を検出する。
+  params:
+    - name: SCANNERS
+      description: "有効化するスキャナ (vuln,secret,misconfig,license)"
+      type: string
+      default: "vuln,secret"
+    - name: EXIT_CODE
+      description: "CRITICAL/HIGH 検出時の終了コード (0=継続 / 1=失敗)"
+      type: string
+      default: "0"
+    - name: IGNOREFILE
+      description: "無視リストファイルパス"
+      type: string
+      default: ".trivyignore.yaml"
+    - name: OUTPUT_FILE
+      description: "レポート出力パス"
+      type: string
+      default: "target/trivy.txt"
+    - name: SEVERITY
+      description: "報告する重大度"
+      type: string
+      default: "CRITICAL,HIGH,MEDIUM"
+  workspaces:
+    - name: source
+      description: スキャン対象のソースコード
+  steps:
+    - name: scan
+      image: aquasec/trivy:latest
+      workingDir: $(workspaces.source.path)
+      env:
+        - name: OUTPUT_FILE
+          value: $(workspaces.source.path)/$(params.OUTPUT_FILE)
+        - name: IGNOREFILE
+          value: $(workspaces.source.path)/$(params.IGNOREFILE)
+        - name: SCANNERS
+          value: $(params.SCANNERS)
+        - name: EXIT_CODE_PARAM
+          value: $(params.EXIT_CODE)
+        - name: SEVERITY
+          value: $(params.SEVERITY)
+      script: |
+        #!/bin/sh
+        set -e
+
+        echo "=============================================="
+        echo " Trivy SCA スキャン開始"
+        echo " スキャナ: ${SCANNERS}"
+        echo "=============================================="
+
+        mkdir -p "$(dirname "${OUTPUT_FILE}")"
+        chmod -R 777 "$(dirname "${OUTPUT_FILE}")"
+
+        IGNORE_OPTS=""
+        if [ -f "${IGNOREFILE}" ]; then
+          IGNORE_OPTS="--ignorefile ${IGNOREFILE}"
+        fi
+
+        trivy fs \
+          --scanners "${SCANNERS}" \
+          --severity "${SEVERITY}" \
+          --exit-code "${EXIT_CODE_PARAM}" \
+          --format table \
+          --output "${OUTPUT_FILE}" \
+          ${IGNORE_OPTS} \
+          "$(workspaces.source.path)" \
+          || true
+
+        echo "=============================================="
+        echo " スキャン完了"
+        if [ -f "${OUTPUT_FILE}" ]; then
+          grep -E "^Total:|CRITICAL|HIGH" "${OUTPUT_FILE}" | head -10 || true
+        fi
+        echo "=============================================="

@@ -1,0 +1,142 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: semgrep-scan
+  namespace: quarkusdroneshop-cicd
+spec:
+  description: >
+    Semgrep による SAST（静的アプリケーションセキュリティテスト）。
+    ソースコードを解析して OWASP Top 10 / Java セキュリティルールの違反を検出する。
+    FAIL_ON_FINDINGS=true の場合、HIGH 以上の検出でパイプラインを停止する。
+  params:
+    - name: CONTEXT_DIR
+      description: スキャン対象ディレクトリ（workspace 内の相対パス）
+      type: string
+      default: "."
+    - name: RULES
+      description: 使用する Semgrep ルールセット（カンマ区切り）
+      type: string
+      default: "p/java,p/owasp-top-ten,p/secrets"
+    - name: FAIL_ON_FINDINGS
+      description: "HIGH 以上の検出時にパイプラインを失敗させるか (true/false)"
+      type: string
+      default: "false"
+  results:
+    - name: high
+      description: HIGH (ERROR) finding count
+    - name: medium
+      description: MEDIUM (WARNING) finding count
+    - name: low
+      description: LOW (INFO) finding count
+    - name: total
+      description: Total finding count
+  workspaces:
+    - name: source
+      description: スキャン対象のソースコードが格納されているワークスペース
+  steps:
+    - name: scan
+      image: returntocorp/semgrep:latest
+      workingDir: $(workspaces.source.path)/$(params.CONTEXT_DIR)
+      env:
+        - name: SEMGREP_RULES
+          value: $(params.RULES)
+        - name: FAIL_ON_FINDINGS
+          value: $(params.FAIL_ON_FINDINGS)
+      script: |
+        #!/bin/sh
+        set -e
+
+        echo "=============================================="
+        echo " Semgrep SAST スキャン開始"
+        echo " ルール: ${SEMGREP_RULES}"
+        echo "=============================================="
+
+        REPORT_DIR="$(workspaces.source.path)/target/semgrep-reports"
+        mkdir -p "${REPORT_DIR}"
+        chmod -R 777 "$(workspaces.source.path)/target"
+
+        # スキャン実行（終了コードを保存）
+        semgrep scan \
+          --config "${SEMGREP_RULES}" \
+          --json \
+          --output "${REPORT_DIR}/results.json" \
+          --no-git-ignore \
+          . || SCAN_EXIT=$?
+
+        SCAN_EXIT=${SCAN_EXIT:-0}
+
+        # サマリー表示・results 書き込み
+        python3 - "${REPORT_DIR}/results.json" "${FAIL_ON_FINDINGS}" \
+          "$(results.high.path)" "$(results.medium.path)" \
+          "$(results.low.path)"  "$(results.total.path)" <<'PYEOF'
+        import json, sys, os
+
+        results_file    = sys.argv[1]
+        fail_on_finding = sys.argv[2].lower() == "true"
+        path_high, path_medium, path_low, path_total = sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6]
+
+        with open(results_file) as f:
+            data = json.load(f)
+
+        findings = data.get("results", [])
+        errors   = data.get("errors",  [])
+
+        severity_order = {"ERROR": 0, "WARNING": 1, "INFO": 2}
+        counts = {"ERROR": 0, "WARNING": 0, "INFO": 0}
+        for r in findings:
+            sev = r.get("extra", {}).get("severity", "INFO").upper()
+            counts[sev] = counts.get(sev, 0) + 1
+
+        open(path_high,   "w").write(str(counts["ERROR"]))
+        open(path_medium, "w").write(str(counts["WARNING"]))
+        open(path_low,    "w").write(str(counts["INFO"]))
+        open(path_total,  "w").write(str(len(findings)))
+
+        # ── 詳細結果をログ出力 ───────────────────────────────────────────
+        SEV_LABEL = {"ERROR": "HIGH  ", "WARNING": "MEDIUM", "INFO": "LOW   "}
+        SEV_SORT  = {"ERROR": 0, "WARNING": 1, "INFO": 2}
+
+        sorted_findings = sorted(
+            findings,
+            key=lambda r: SEV_SORT.get(r.get("extra", {}).get("severity", "INFO").upper(), 9)
+        )
+
+        if sorted_findings:
+            print()
+            print("=" * 72)
+            print(f"  Semgrep 検出詳細  ({len(sorted_findings)} 件)")
+            print("=" * 72)
+            for r in sorted_findings:
+                sev   = r.get("extra", {}).get("severity", "INFO").upper()
+                label = SEV_LABEL.get(sev, sev)
+                path  = r.get("path", "")
+                start = r.get("start", {})
+                line  = start.get("line", "?")
+                rule  = r.get("check_id", "")
+                msg   = r.get("extra", {}).get("message", "").strip().replace("\n", " ")
+                # ソースコードの該当行を表示
+                lines_preview = r.get("extra", {}).get("lines", "").strip()
+
+                print(f"[{label}] {path}:{line}")
+                print(f"  Rule   : {rule}")
+                print(f"  Message: {msg}")
+                if lines_preview:
+                    print(f"  Code   : {lines_preview[:120]}")
+                print()
+            print("=" * 72)
+        else:
+            print()
+            print("  Semgrep: 検出なし ✅")
+            print()
+
+        if errors:
+            print(f"WARN: {len(errors)} parse error(s)")
+
+        print(f"HIGH={counts['ERROR']} MEDIUM={counts['WARNING']} LOW={counts['INFO']} TOTAL={len(findings)}")
+
+        if fail_on_finding and counts["ERROR"] > 0:
+            print(f"FAIL: HIGH {counts['ERROR']} findings")
+            sys.exit(1)
+
+        print("OK: semgrep-scan done")
+        PYEOF
