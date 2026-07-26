@@ -734,5 +734,14 @@ spec:
           ${{ steps['request-topic-orders-in-dev'].output.reply }}
           ${{ steps['request-topic-rewards'].output.reply }}
     links:
+      - title: カタログエントリ (Overview / Docs / CI)
+        icon: catalog
+        entityRef: ${{ steps['register'].output.entityRef }}
+      - title: ソースコード (GitHub)
+        icon: github
+        url: https://github.com/${{ parameters.git_owner_name }}/${{ parameters.git_repo_name }}
+      - title: README
+        icon: docs
+        url: https://github.com/${{ parameters.git_owner_name }}/${{ parameters.git_repo_name }}/blob/main/README.md
       - title: テストレポート
         url: http://${{ parameters.app_name }}-test-report-${{ parameters.tektonNamespace }}.apps.${{ parameters.clusterDomain }}/
