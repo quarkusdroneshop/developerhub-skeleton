@@ -28,6 +28,6 @@ spec:
     - resource:shop-asite-orders-in
     - resource:shop-bsite-rewards
   consumesApis:
-    - shop-bsite-orders-in
+    - kafka-asite-orders-in
   providesApis:
     - kafka-bsite-rewards
