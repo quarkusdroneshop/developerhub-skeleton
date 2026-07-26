@@ -435,7 +435,7 @@ spec:
                   - name: CONTEXT_DIR
                     value: .
                   - name: GOALS
-                    value: "clean verify -DskipITs -Dtest=!ArchitectureTest"
+                    value: "clean verify -DskipITs -Dtest=!ArchitectureTest -Dsurefire.failIfNoSpecifiedTests=false"
                 workspaces:
                   - name: source
                     workspace: shared-workspace
